@@ -1,22 +1,53 @@
 /* Campus Sports Management System - Clean Arial Theme */
 
-/* Global text styling using Arial */
-html, body, .stApp, 
+/* Apply Arial cleanly to text and headers */
+body, .main, 
 h1, h2, h3, h4, h5, h6, 
-p, span, div, a, label, input, button, select, textarea,
+p, span.text, div.text, label, input, textarea,
+.stTextInput input, .stTextArea textarea, .stNumberInput input,
 [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p {
-    font-family: Arial, Helvetica, sans-serif !important;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .stApp {
     background-color: #F0F7FF !important;
     color: #0F172A !important;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 .main .block-container {
     padding-top: 1rem;
     padding-bottom: 3rem;
     max-width: 1200px;
+}
+
+/* =============================================================
+   CRITICAL FIX: ELIMINATE RAW ARROW LIGATURE TEXT LEAKAGE
+   ============================================================= */
+button[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarHeader"] button,
+button[kind="header"],
+button[data-testid="baseButton-headerNoPadding"],
+[data-testid="stExpandToggle"] {
+    font-size: 0 !important;
+    line-height: 0 !important;
+}
+
+button[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="stSidebarHeader"] button svg,
+button[kind="header"] svg {
+    display: inline-block !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+}
+
+button[data-testid="stSidebarCollapseButton"] *,
+[data-testid="stSidebarCollapseButton"] *,
+.material-icons,
+[class*="material-symbols"] {
+    font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
 }
 
 /* =============================================================
@@ -83,7 +114,8 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid #BFDBFE !important;
 }
 
-section[data-testid="stSidebar"] * {
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] div:not([data-testid="stIcon"]):not([data-testid="stSidebarCollapseButton"]) {
     color: #0F2942 !important;
     font-family: Arial, Helvetica, sans-serif;
 }
@@ -281,14 +313,4 @@ ul[role="listbox"] li:hover {
     background: #FEF2F2;
     color: #991B1B;
     border-color: #FECACA;
-}
-
-/* Facility Card */
-.facility-card {
-    background: #FFFFFF !important;
-    border: 1px solid #BFDBFE !important;
-    border-radius: 12px;
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 2px 6px rgba(30, 58, 138, 0.04);
 }
