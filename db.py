@@ -1,6 +1,3 @@
-"""
-db.py - SQLite database layer, state transitions, auto-expiration engine, and court tracking.
-"""
 import sqlite3
 import os
 from datetime import datetime, timedelta
@@ -82,7 +79,7 @@ def init_db():
     );
     """)
     
-    # Audit log / Activity records
+    # Audit log
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS inventory_logs (
         log_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -684,10 +681,14 @@ def seed_database(force_reseed: bool = False):
     cursor.execute("SELECT COUNT(*) as cnt FROM equipment")
     eq_count = cursor.fetchone()['cnt']
     
+    cursor.execute("SELECT item_name FROM equipment LIMIT 5")
+    sample_names = [r['item_name'] for r in cursor.fetchall()]
+    has_old_names = any("Yonex" in name or "Mavis" in name or "Nanoray" in name for name in sample_names)
+    
     cursor.execute("SELECT COUNT(*) as cnt FROM courts")
     court_count = cursor.fetchone()['cnt']
     
-    if eq_count == 0 or force_reseed:
+    if eq_count == 0 or force_reseed or has_old_names:
         cursor.execute("DELETE FROM allocation_requests")
         cursor.execute("DELETE FROM inventory_logs")
         cursor.execute("DELETE FROM equipment")
@@ -710,7 +711,7 @@ def seed_database(force_reseed: bool = False):
         conn.commit()
         print(f"Seeded {len(SEED_EQUIPMENT)} equipment items successfully.")
         
-    if court_count == 0 or force_reseed:
+    if court_count == 0 or force_reseed or has_old_names:
         cursor.execute("DELETE FROM courts")
         now_iso = datetime.now().isoformat()
         for c in SEED_COURTS:

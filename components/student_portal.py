@@ -35,9 +35,9 @@ def render_student_portal():
                 st.subheader("Borrower Allocation Form")
                 
                 with st.form(key="student_request_form", clear_on_submit=False):
-                    # Equipment Options (Clean, simple, non-branded list)
+                    # Equipment Options (Strict 1-word clean name)
                     eq_options = {
-                        f"{eq['item_name']} - {eq['available_quantity']} Available (Rack: {eq['location_rack']})": eq['equipment_id']
+                        f"{eq['item_name']} ({eq['available_quantity']} Available)": eq['equipment_id']
                         for eq in available_items
                     }
                     
