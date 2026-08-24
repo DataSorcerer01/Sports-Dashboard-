@@ -35,14 +35,14 @@ def render_student_portal():
                 st.subheader("Borrower Allocation Form")
                 
                 with st.form(key="student_request_form", clear_on_submit=False):
-                    # Equipment Options (Direct, simple list - no secondary model/brand selection required)
+                    # Equipment Options (Clean, simple, non-branded list)
                     eq_options = {
-                        f"{eq['item_name']} ({eq['category']}) - {eq['available_quantity']} Available (Rack: {eq['location_rack']})": eq['equipment_id']
+                        f"{eq['item_name']} - {eq['available_quantity']} Available (Rack: {eq['location_rack']})": eq['equipment_id']
                         for eq in available_items
                     }
                     
                     selected_label = st.selectbox(
-                        "Select Sports Equipment to Borrow",
+                        "Select Sports Equipment",
                         options=list(eq_options.keys()),
                         index=0,
                         help="Choose the sports equipment item you wish to borrow from the sports room."
@@ -178,7 +178,7 @@ def render_student_portal():
                         st.markdown(f"""
                         <div style="margin: 0.75rem 0;">
                             <strong>Verification Timer:</strong> 
-                            <span class="{timer_class}">{time_str}</span>
+                            <span class="{timer_class}">Validity: {time_str}</span>
                         </div>
                         """, unsafe_allow_html=True)
                         

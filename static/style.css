@@ -1,40 +1,55 @@
-/* Sports Management System - Premium Light & Dark Blue Theme */
+/* Sports Management System - High Contrast Light & Dark Blue Theme */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root {
-    --dark-blue: #0F2942;
-    --navy-blue: #1E3A8A;
-    --royal-blue: #2563EB;
-    --sky-blue: #38BDF8;
-    --light-blue-bg: #F0F7FF;
-    --card-blue-border: #BFDBFE;
-    --text-navy: #0F172A;
-    --text-muted: #475569;
-}
-
-html, body, [class*="css"] {
+html, body, [class*="css"], .stApp {
     font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
-}
-
-/* Page Canvas */
-.stApp {
     background-color: #F0F7FF !important;
+    color: #0F172A !important;
 }
 
 .main .block-container {
-    padding-top: 1rem;
+    padding-top: 1.25rem;
     padding-bottom: 3rem;
     max-width: 1200px;
 }
 
-/* Top App Header Banner */
+/* =============================================================
+   SIDEBAR STYLING - CLEAN LIGHT SIDEBAR WITH CRISP CONTRAST
+   ============================================================= */
+section[data-testid="stSidebar"] {
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #BFDBFE !important;
+}
+
+section[data-testid="stSidebar"] * {
+    color: #0F2942 !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button {
+    background-color: #EFF6FF !important;
+    color: #1D4ED8 !important;
+    border: 1px solid #BFDBFE !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    transition: all 0.15s ease;
+}
+
+section[data-testid="stSidebar"] .stButton > button:hover {
+    background-color: #DBEAFE !important;
+    border-color: #2563EB !important;
+    color: #1E40AF !important;
+}
+
+/* =============================================================
+   APP HEADER
+   ============================================================= */
 .app-header {
     background: linear-gradient(135deg, #0F2942 0%, #1E3A8A 60%, #1D4ED8 100%);
     color: #FFFFFF !important;
     padding: 1.5rem 2rem;
     border-radius: 12px;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 12px rgba(15, 41, 66, 0.15);
+    box-shadow: 0 4px 12px rgba(15, 41, 66, 0.12);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -57,7 +72,9 @@ html, body, [class*="css"] {
     font-size: 0.95rem;
 }
 
-/* Stat Grid & Cards */
+/* =============================================================
+   STAT KPI CARDS
+   ============================================================= */
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -71,12 +88,6 @@ html, body, [class*="css"] {
     border-radius: 10px;
     padding: 1.15rem 1.25rem;
     box-shadow: 0 2px 6px rgba(30, 58, 138, 0.05);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(30, 58, 138, 0.1);
 }
 
 .stat-card .label {
@@ -94,7 +105,9 @@ html, body, [class*="css"] {
     color: #0F2942 !important;
 }
 
-/* Native Streamlit Bordered Container as White Card */
+/* =============================================================
+   CONTAINERS & CARDS
+   ============================================================= */
 div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
     background: #FFFFFF !important;
     border: 1px solid #BFDBFE !important;
@@ -104,53 +117,101 @@ div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
     margin-bottom: 1rem !important;
 }
 
-/* Headings in Light Theme */
 h1, h2, h3, h4, h5, h6 {
     color: #0F2942 !important;
     font-weight: 700 !important;
 }
 
-p, span, div {
+p, span, div, caption {
     color: #1E293B;
 }
 
-/* Form Labels - High Contrast Dark Navy */
+/* =============================================================
+   FORM INPUTS & DROPDOWN POPOVER FIX (FIXES DARK-ON-DARK ISSUE)
+   ============================================================= */
 label,
 label p,
 [data-testid="stWidgetLabel"],
-[data-testid="stWidgetLabel"] p,
-.stTextInput label,
-.stSelectbox label,
-.stNumberInput label,
-.stTextArea label,
-.stCheckbox label,
-.stRadio label {
+[data-testid="stWidgetLabel"] p {
     color: #0F2942 !important;
     font-weight: 700 !important;
     font-size: 0.95rem !important;
     display: block !important;
 }
 
-/* Input Fields */
+/* Text & Number Inputs */
 .stTextInput input,
 .stTextArea textarea,
-.stNumberInput input,
-.stSelectbox div[data-baseweb="select"] {
+.stNumberInput input {
     color: #0F172A !important;
     background-color: #FFFFFF !important;
     border: 1px solid #94A3B8 !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     border-radius: 6px !important;
 }
 
-.stTextInput input:focus,
-.stTextArea textarea:focus,
-.stNumberInput input:focus {
-    border-color: #2563EB !important;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+/* Selectbox Trigger Input */
+div[data-baseweb="select"] {
+    background-color: #FFFFFF !important;
+    border: 1px solid #94A3B8 !important;
+    border-radius: 6px !important;
 }
 
-/* Status Badges */
+div[data-baseweb="select"] * {
+    color: #0F172A !important;
+    font-weight: 600 !important;
+}
+
+/* Dropdown Menu Popover (The opened list) */
+div[data-baseweb="popover"],
+div[data-baseweb="menu"],
+ul[role="listbox"],
+div[data-testid="stSelectboxVirtualDropdown"] {
+    background-color: #FFFFFF !important;
+    border: 1px solid #BFDBFE !important;
+    box-shadow: 0 8px 24px rgba(15, 41, 66, 0.15) !important;
+    border-radius: 8px !important;
+}
+
+/* Dropdown Menu Options */
+li[role="option"],
+div[role="option"],
+ul[role="listbox"] li {
+    background-color: #FFFFFF !important;
+    color: #0F172A !important;
+    font-weight: 600 !important;
+    padding: 0.6rem 1rem !important;
+}
+
+li[role="option"]:hover,
+li[role="option"][aria-selected="true"],
+ul[role="listbox"] li:hover {
+    background-color: #EFF6FF !important;
+    color: #1D4ED8 !important;
+}
+
+/* =============================================================
+   BUTTONS
+   ============================================================= */
+.stButton > button[kind="primary"],
+.stButton > button:first-child:not([kind="secondary"]) {
+    background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%) !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1.25rem !important;
+    box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25) !important;
+}
+
+.stButton > button[kind="primary"]:hover {
+    background: linear-gradient(135deg, #0F2942 0%, #1E40AF 100%) !important;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35) !important;
+}
+
+/* =============================================================
+   STATUS BADGES
+   ============================================================= */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -216,45 +277,4 @@ label p,
     font-size: 0.85rem;
     color: #334155 !important;
     margin-bottom: 0.35rem;
-}
-
-/* Role Selection Cards */
-.role-card {
-    background: #FFFFFF;
-    border: 2px solid #BFDBFE;
-    border-radius: 12px;
-    padding: 2rem;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.06);
-    transition: all 0.2s ease;
-}
-
-.role-card:hover {
-    border-color: #2563EB;
-    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
-    transform: translateY(-3px);
-}
-
-.role-card h3 {
-    color: #0F2942 !important;
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
-}
-
-.role-card p {
-    color: #475569;
-    font-size: 0.92rem;
-    line-height: 1.5;
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-    .app-header {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 1.25rem;
-    }
-    .stat-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
 }
