@@ -4,6 +4,19 @@ from datetime import datetime
 
 
 def load_custom_css():
+    # Inject PWA Mobile App Meta Tags
+    st.markdown("""
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="apple-mobile-web-app-title" content="SportsHub">
+        <meta name="theme-color" content="#1D4ED8">
+        <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/857/857455.png">
+    </head>
+    """, unsafe_allow_html=True)
+    
     css_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "style.css")
     if os.path.exists(css_path):
         with open(css_path, "r", encoding="utf-8") as f:
@@ -20,7 +33,7 @@ def render_header(current_role: str = "Student Portal"):
                 Equipment Allocation & Facility Availability Portal &bull; Logged in as: <strong>{current_role}</strong>
             </div>
         </div>
-        <div style="text-align: right;">
+        <div class="clock-container" style="text-align: right;">
             <div class="clock-label">Campus Clock</div>
             <div class="clock-time">{now_str}</div>
         </div>

@@ -60,6 +60,17 @@ if st.sidebar.button("Reset Default Campus Inventory", use_container_width=True,
     st.sidebar.success("Database re-seeded with fresh campus equipment and courts!")
     st.rerun()
 
+st.sidebar.divider()
+st.sidebar.markdown("### 📱 Install Mobile App")
+st.sidebar.markdown("""
+<div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 0.75rem; font-size: 0.82rem; color: #1E40AF;">
+    <strong>Install as Phone App:</strong><br>
+    &bull; <strong>Android (Chrome):</strong> Tap <strong>⋮</strong> &rarr; <em>Add to Home screen</em><br>
+    &bull; <strong>iPhone (Safari):</strong> Tap <strong>Share</strong> &rarr; <em>Add to Home Screen</em><br>
+    <em>Opens in full-screen standalone mode!</em>
+</div>
+""", unsafe_allow_html=True)
+
 st.sidebar.markdown("""
 <div style="margin-top: 1.5rem; padding: 0.85rem; background: #FFFFFF; border-radius: 8px; border: 1px solid #BFDBFE; font-size: 0.8rem; color: #334155; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
     <strong style="color: #0F2942;">Campus Policy:</strong><br>
