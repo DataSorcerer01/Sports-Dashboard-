@@ -1,6 +1,5 @@
-/* Campus Sports Management System - High Contrast Arial Theme (With Protected Icon Fonts) */
+/* Campus Sports Management System - Premium High Contrast Light & Dark Blue Theme */
 
-/* Global text typography using Arial, excluding icons */
 html, body, .stApp {
     font-family: Arial, Helvetica, sans-serif !important;
     background-color: #F0F7FF !important;
@@ -14,10 +13,7 @@ p, label, input, textarea,
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* =============================================================
-   CRITICAL FIX: PRESERVE STREAMLIT MATERIAL ICONS & ARROWS
-   (DO NOT OVERRIDE WITH ARIAL)
-   ============================================================= */
+/* Preserve Streamlit Material Icons & Arrows */
 [data-testid="stIcon"],
 [data-testid="stSidebarCollapseButton"] *,
 button[data-testid="stSidebarCollapseButton"] span,
@@ -30,64 +26,69 @@ summary span:first-child {
 }
 
 .main .block-container {
-    padding-top: 1.25rem;
+    padding-top: 1rem;
     padding-bottom: 3rem;
     max-width: 1200px;
 }
 
 /* =============================================================
-   TOP APP HEADER BANNER
+   ELEGANT WHITE & BLUE HEADER BANNER (NO DARK BLUE OVERLAYS)
    ============================================================= */
 .app-header {
-    background: linear-gradient(135deg, #0F2942 0%, #1E3A8A 55%, #1D4ED8 100%) !important;
+    background: #FFFFFF !important;
+    border: 1px solid #BFDBFE !important;
+    border-top: 5px solid #1D4ED8 !important;
     padding: 1.5rem 2rem !important;
     border-radius: 12px !important;
     margin-bottom: 1.5rem !important;
-    box-shadow: 0 4px 14px rgba(15, 41, 66, 0.18) !important;
+    box-shadow: 0 4px 12px rgba(30, 58, 138, 0.06) !important;
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
     flex-wrap: wrap !important;
     gap: 1rem !important;
-    border: 1px solid #1E3A8A !important;
 }
 
-.app-header h1,
 .app-header .app-title {
-    color: #FFFFFF !important;
-    font-size: 1.7rem !important;
+    color: #0F2942 !important;
+    font-size: 1.8rem !important;
     font-weight: 700 !important;
     margin: 0 !important;
     letter-spacing: -0.01em !important;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
-.app-header p,
 .app-header .app-subtitle {
-    color: #E0F2FE !important;
-    font-size: 0.95rem !important;
+    color: #475569 !important;
+    font-size: 0.98rem !important;
     font-weight: 500 !important;
     margin: 0.35rem 0 0 0 !important;
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
+.app-header .app-subtitle strong {
+    color: #1D4ED8 !important;
+}
+
 .app-header .clock-label {
-    font-size: 0.82rem !important;
-    color: #BAE6FD !important;
-    font-weight: 500 !important;
+    font-size: 0.8rem !important;
+    color: #64748B !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .app-header .clock-time {
-    font-size: 1.05rem !important;
+    font-size: 1.15rem !important;
     font-weight: 700 !important;
-    color: #FFFFFF !important;
+    color: #0F2942 !important;
     font-family: Arial, Helvetica, sans-serif !important;
+    margin-top: 0.2rem !important;
 }
 
 /* =============================================================
-   SIDEBAR STYLING
+   SIDEBAR
    ============================================================= */
 section[data-testid="stSidebar"] {
     background-color: #FFFFFF !important;
@@ -130,7 +131,7 @@ section[data-testid="stSidebar"] .stButton > button:hover {
     border: 1px solid #BFDBFE !important;
     border-radius: 10px;
     padding: 1.15rem 1.25rem;
-    box-shadow: 0 2px 6px rgba(30, 58, 138, 0.05);
+    box-shadow: 0 2px 6px rgba(30, 58, 138, 0.04);
 }
 
 .stat-card .label {
@@ -162,12 +163,7 @@ div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
     margin-bottom: 1rem !important;
 }
 
-.main h1:not(.app-header h1), 
-.main h2, 
-.main h3, 
-.main h4, 
-.main h5, 
-.main h6 {
+h1, h2, h3, h4, h5, h6 {
     color: #0F2942 !important;
     font-weight: 700 !important;
     font-family: Arial, Helvetica, sans-serif !important;

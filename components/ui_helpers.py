@@ -15,16 +15,14 @@ def render_header(current_role: str = "Student Portal"):
     st.markdown(f"""
     <div class="app-header">
         <div>
-            <div style="color: #FFFFFF !important; font-size: 1.7rem; font-weight: 700; font-family: Arial, sans-serif; letter-spacing: -0.01em; margin-bottom: 0.25rem;">
-                Campus Sports Management System
-            </div>
-            <div style="color: #E0F2FE !important; font-size: 0.95rem; font-weight: 500; font-family: Arial, sans-serif;">
-                Equipment Allocation & Facility Availability Portal &bull; Logged in as: <strong style="color: #FFFFFF !important;">{current_role}</strong>
+            <div class="app-title">Campus Sports Management System</div>
+            <div class="app-subtitle">
+                Equipment Allocation & Facility Availability Portal &bull; Logged in as: <strong>{current_role}</strong>
             </div>
         </div>
         <div style="text-align: right;">
-            <div style="font-size: 0.82rem; color: #BAE6FD !important; font-weight: 500; font-family: Arial, sans-serif;">Campus Clock</div>
-            <div style="font-size: 1.05rem; font-weight: 700; color: #FFFFFF !important; font-family: Arial, sans-serif;">{now_str}</div>
+            <div class="clock-label">Campus Clock</div>
+            <div class="clock-time">{now_str}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
