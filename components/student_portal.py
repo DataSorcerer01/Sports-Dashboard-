@@ -29,14 +29,14 @@ def render_student_portal():
     with col_form:
         with st.container(border=True):
             st.markdown("#### Borrower Allocation Form")
-            st.caption("Select sports gear and fill in your details to reserve equipment.")
+            st.caption("Select sports gear, specify quantity, and fill in your details to reserve equipment.")
             
             if not available_items:
                 st.warning("All equipment is currently in use. Check the Peer Directory below to coordinate handovers.")
             else:
                 with st.form(key="student_request_form", clear_on_submit=False):
                     eq_options = {
-                        f"{eq['item_name']} ({eq['available_quantity']} Available)": eq['equipment_id']
+                        f"{eq['item_name']} ({eq['available_quantity']} Available)": eq
                         for eq in available_items
                     }
                     
@@ -46,7 +46,19 @@ def render_student_portal():
                         index=0,
                         help="Choose equipment item to borrow."
                     )
-                    selected_eq_id = eq_options[selected_label]
+                    selected_eq = eq_options[selected_label]
+                    selected_eq_id = selected_eq['equipment_id']
+                    max_avail = selected_eq['available_quantity']
+                    
+                    # Quantity to Borrow Selector
+                    quantity_borrow = st.number_input(
+                        f"Quantity to Borrow (Max: {max_avail})",
+                        min_value=1,
+                        max_value=max_avail,
+                        value=1,
+                        step=1,
+                        help=f"Select how many units of {selected_eq['item_name']} you want to borrow."
+                    )
                     
                     # Student Details
                     c1, c2 = st.columns(2)
@@ -116,7 +128,8 @@ def render_student_portal():
                                     dm_number=dm_number,
                                     mobile_number=clean_phone,
                                     room_number=room_number,
-                                    intended_duration=intended_duration
+                                    intended_duration=intended_duration,
+                                    quantity=int(quantity_borrow)
                                 )
                                 if ok:
                                     st.success(msg)
@@ -138,9 +151,10 @@ def render_student_portal():
                 else:
                     for req in active_reqs:
                         h1, h2 = st.columns([2, 1])
+                        qty_str = f"{req.get('quantity', 1)}x " if req.get('quantity', 1) > 1 else ""
                         with h1:
-                            st.markdown(f"**{req['equipment_name']}**")
-                            st.caption(f"ID: `{req['request_id']}`")
+                            st.markdown(f"**{qty_str}{req['equipment_name']}**")
+                            st.caption(f"ID: `{req['request_id']}` | Qty: {req.get('quantity', 1)}")
                         with h2:
                             st.markdown(render_status_badge(req['status']), unsafe_allow_html=True)
                             
@@ -154,7 +168,7 @@ def render_student_portal():
                             </div>
                             """, unsafe_allow_html=True)
                             
-                            if st.button("Cancel Request", key=f"cancel_{req['request_id']}", use_container_width=True):
+                            if st.button(f"Cancel Request ({req['request_id']})", key=f"cancel_{req['request_id']}", use_container_width=True):
                                 ok_c, msg_c = cancel_request(req['request_id'], reason="Cancelled by Student")
                                 if ok_c:
                                     st.success(msg_c)
@@ -197,7 +211,7 @@ def render_student_portal():
     else:
         peer_data = [
             {
-                "Equipment": item['equipment_name'],
+                "Equipment": f"{item.get('quantity', 1)}x {item['equipment_name']}",
                 "Borrower Name": item['student_name'],
                 "DM Number": item['dm_number'],
                 "Phone": item['mobile_number'],

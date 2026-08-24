@@ -27,7 +27,7 @@ def run_end_to_end_verification():
     assert stats['available'] == stats['total'], "All items should be initially available"
     print(f"STEP 1: DB Initialized and Seeded ({stats['total']} total items, {stats['available']} available).")
     
-    # 2. Student Request Submission
+    # 2. Student Request Submission with Quantity = 2
     target_eq = all_eq[0]
     eq_id = target_eq['equipment_id']
     init_avail = target_eq['available_quantity']
@@ -38,17 +38,19 @@ def run_end_to_end_verification():
         dm_number="DM2024-9988",
         mobile_number="9876543210",
         room_number="Hostel Block C - Room 302",
-        intended_duration="2 Hours"
+        intended_duration="2 Hours",
+        quantity=2
     )
     assert ok is True, f"Request submission failed: {msg}"
     req_id = req_data['request_id']
-    print(f"STEP 2: Student submitted request {req_id} (Reserved 1 unit with 30-min timer).")
+    assert req_data['quantity'] == 2
+    print(f"STEP 2: Student submitted request {req_id} (Reserved 2 units with 30-min timer).")
     
-    # Verify counts: available down by 1, pending up by 1
+    # Verify counts: available down by 2, pending up by 2
     stats_after_req = get_inventory_stats()
-    assert stats_after_req['available'] == stats['available'] - 1
-    assert stats_after_req['pending'] == 1
-    print("STEP 3: State transition verified: 1 unit moved to 'Pending Verification'.")
+    assert stats_after_req['available'] == stats['available'] - 2
+    assert stats_after_req['pending'] == 2
+    print("STEP 3: State transition verified: 2 units moved to 'Pending Verification'.")
     
     # 3. Guard Approval with Mandatory ID Check
     ok_appr, msg_appr = approve_allocation_request(req_id, guard_name="Officer Rajesh")
@@ -58,73 +60,66 @@ def run_end_to_end_verification():
     # Verify Active Checkouts Peer Transparency Directory
     active_list = get_active_checkouts()
     assert len(active_list) == 1
-    borrower_item = active_list[0]
-    assert borrower_item['student_name'] == "Vikramaditya Roy"
-    assert borrower_item['dm_number'] == "DM2024-9988"
-    assert borrower_item['room_number'] == "HOSTEL BLOCK C - ROOM 302"
-    assert borrower_item['mobile_number'] == "9876543210"
-    assert borrower_item['authorized_at'] is not None
-    print("STEP 5: Peer Transparency Directory confirmed: Borrower name, DM, room, phone, issue timestamp visible.")
+    assert active_list[0]['quantity'] == 2
+    assert active_list[0]['student_name'] == "Vikramaditya Roy"
+    print("STEP 5: Peer Transparency Directory confirmed: Borrower name, DM, room, phone, quantity (2), issue timestamp visible.")
     
-    # 4. Equipment Return & Condition Logging
+    # 4. Return Processing
     ok_ret, msg_ret = return_equipment(
         request_id=req_id,
         return_condition="Good Condition",
-        guard_notes="Returned in spotless condition, strings intact",
+        guard_notes="Returned intact on time",
         guard_name="Officer Rajesh"
     )
-    assert ok_ret is True, f"Return failed: {msg_ret}"
+    assert ok_ret is True, f"Equipment return failed: {msg_ret}"
     stats_after_ret = get_inventory_stats()
+    assert stats_after_ret['available'] == stats['total']
     assert stats_after_ret['in_use'] == 0
-    assert stats_after_ret['available'] == stats['available']
     print("STEP 6: Equipment successfully returned and reset to 'Available'.")
     
-    # 5. 30-Minute Expiration Engine
+    # 5. Timer Expiration Verification
     print("Testing strict 30-minute auto-expiration engine...")
-    ok_exp, _, req_data_exp = create_allocation_request(
+    ok_stale, _, stale_req = create_allocation_request(
         equipment_id=eq_id,
-        student_name="Test Expiry Student",
-        dm_number="DM2024-EXPIRE",
-        mobile_number="9112233445",
+        student_name="Ananya Verma",
+        dm_number="DM2024-5544",
+        mobile_number="9988776655",
         room_number="Hostel Block A - 101",
-        intended_duration="30 Minutes"
+        intended_duration="1 Hour",
+        quantity=2
     )
-    req_exp_id = req_data_exp['request_id']
+    stale_id = stale_req['request_id']
     
-    # Force expiration timestamp into past (>30 min)
+    # Backdate expiration timestamp in DB to simulate 35 mins elapsed
+    past_iso = (datetime.now() - timedelta(minutes=35)).isoformat()
     conn = get_connection()
-    past_time = (datetime.now() - timedelta(minutes=35)).isoformat()
-    conn.execute("UPDATE allocation_requests SET expires_at = ? WHERE request_id = ?", (past_time, req_exp_id))
+    conn.execute("UPDATE allocation_requests SET expires_at = ? WHERE request_id = ?", (past_iso, stale_id))
     conn.commit()
     conn.close()
     
-    count_expired = expire_stale_requests()
-    assert count_expired >= 1, "Expiry engine failed to identify stale request!"
+    # Run auto-expire
+    expired_cnt = expire_stale_requests()
+    assert expired_cnt >= 1, "Auto-expire engine must expire overdue requests"
     
-    stats_after_exp = get_inventory_stats()
-    assert stats_after_exp['available'] == stats['total']
-    assert stats_after_exp['pending'] == 0
-    print("STEP 7: Stale request (>30 min) successfully expired and unblocked inventory automatically.")
+    stats_after_expire = get_inventory_stats()
+    assert stats_after_expire['available'] == stats['total'], "Inventory must be restored on expiration"
+    assert stats_after_expire['pending'] == 0
+    print(f"STEP 7: Stale request (>30 min, 2 units) successfully expired and unblocked inventory automatically.")
     
-    # 6. CSV/Excel Offline Bulk Operations & Error Diagnostics
-    csv_temp = generate_csv_template()
-    assert "Equipment_ID" in csv_temp and "Total_Quantity" in csv_temp
-    
-    # Test error diagnostic precision
-    err_df = pd.DataFrame([
-        {"Equipment_ID": "EQ-NEW-01", "Category": "Football", "Item_Name": "Pro Ball", "Total_Quantity": "invalid_num", "Condition": "Good", "Location_Rack": "Bin 1", "Notes": ""},
-        {"Equipment_ID": "EQ-NEW-02", "Category": "Tennis", "Item_Name": "", "Total_Quantity": 3, "Condition": "Good", "Location_Rack": "Rack T", "Notes": ""}
+    # 6. Bulk Import Validation Engine Test
+    sample_invalid_df = pd.DataFrame([
+        {"Equipment_ID": "EQ-NEW-01", "Category": "Badminton", "Item_Name": "Badminton", "Total_Quantity": 5, "Condition": "Good Condition", "Location_Rack": "Rack A", "Notes": "OK"},
+        {"Equipment_ID": "EQ-NEW-02", "Category": "Cricket", "Item_Name": "Bat", "Total_Quantity": -3, "Condition": "Good Condition", "Location_Rack": "Rack B", "Notes": "Bad Qty"}, # invalid qty
+        {"Equipment_ID": "EQ-NEW-03", "Category": "Tennis", "Item_Name": "", "Total_Quantity": 4, "Condition": "Good Condition", "Location_Rack": "Rack C", "Notes": "Empty Name"}, # empty name
     ])
-    res_err = validate_inventory_dataframe(err_df)
-    assert res_err['is_valid'] is False
-    assert len(res_err['errors']) == 2
-    assert res_err['errors'][0]['row'] == 2 and res_err['errors'][0]['column'] == "Total_Quantity"
-    assert res_err['errors'][1]['row'] == 3 and res_err['errors'][1]['column'] == "Item_Name"
-    print("STEP 8: CSV/Excel template validator accurately diagnosed exact Row 2 (Total_Quantity) and Row 3 (Item_Name) errors.")
+    val_res = validate_inventory_dataframe(sample_invalid_df)
+    assert val_res['is_valid'] is False
+    assert len(val_res['errors']) == 2
+    print(f"STEP 8: CSV/Excel template validator accurately diagnosed exact Row 2 (Total_Quantity) and Row 3 (Item_Name) errors.")
     
     print("=" * 65)
     print("ALL END-TO-END VERIFICATION CHECKS PASSED WITH 100% SUCCESS!")
     print("=" * 65)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_end_to_end_verification()

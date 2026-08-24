@@ -55,11 +55,6 @@ if st.sidebar.button("Refresh Data & Timers", use_container_width=True):
     expire_stale_requests()
     st.rerun()
 
-if st.sidebar.button("Reset Default Campus Inventory", use_container_width=True, help="Re-seeds the database with default campus sports equipment and 14 courts"):
-    seed_database(force_reseed=True)
-    st.sidebar.success("Database re-seeded with fresh campus equipment and courts!")
-    st.rerun()
-
 st.sidebar.divider()
 st.sidebar.markdown("### 📱 Install Mobile App")
 st.sidebar.markdown("""

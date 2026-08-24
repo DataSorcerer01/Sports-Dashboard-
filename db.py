@@ -43,6 +43,7 @@ def init_db():
         equipment_id TEXT NOT NULL,
         equipment_name TEXT NOT NULL,
         category TEXT NOT NULL,
+        quantity INTEGER NOT NULL DEFAULT 1,
         student_name TEXT NOT NULL,
         dm_number TEXT NOT NULL,
         mobile_number TEXT NOT NULL,
@@ -59,6 +60,12 @@ def init_db():
         FOREIGN KEY (equipment_id) REFERENCES equipment (equipment_id)
     );
     """)
+    
+    # Check if quantity column exists in existing DB
+    cursor.execute("PRAGMA table_info(allocation_requests)")
+    cols = [col[1] for col in cursor.fetchall()]
+    if "quantity" not in cols:
+        cursor.execute("ALTER TABLE allocation_requests ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1")
     
     # Courts & Playing Facilities table
     cursor.execute("""
@@ -101,7 +108,7 @@ def expire_stale_requests() -> int:
     now_iso = datetime.now().isoformat()
     
     cursor.execute("""
-        SELECT request_id, equipment_id, student_name, dm_number
+        SELECT request_id, equipment_id, quantity, student_name, dm_number
         FROM allocation_requests
         WHERE status = 'Pending Verification' AND expires_at <= ?
     """, (now_iso,))
@@ -112,6 +119,7 @@ def expire_stale_requests() -> int:
     for row in expired_rows:
         req_id = row['request_id']
         eq_id = row['equipment_id']
+        qty = row['quantity'] if 'quantity' in row.keys() else 1
         
         cursor.execute("""
             UPDATE allocation_requests
@@ -121,16 +129,16 @@ def expire_stale_requests() -> int:
         
         cursor.execute("""
             UPDATE equipment
-            SET pending_quantity = MAX(0, pending_quantity - 1),
-                available_quantity = available_quantity + 1,
+            SET pending_quantity = MAX(0, pending_quantity - ?),
+                available_quantity = available_quantity + ?,
                 updated_at = ?
             WHERE equipment_id = ?
-        """, (now_iso, eq_id))
+        """, (qty, qty, now_iso, eq_id))
         
         cursor.execute("""
             INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
             VALUES (?, ?, 'AUTO_EXPIRE', ?, 'System Timer')
-        """, (now_iso, eq_id, f"Request {req_id} by {row['student_name']} ({row['dm_number']}) auto-expired after 30 mins."))
+        """, (now_iso, eq_id, f"Request {req_id} ({qty} units) by {row['student_name']} ({row['dm_number']}) auto-expired after 30 mins."))
         
     conn.commit()
     conn.close()
@@ -143,7 +151,8 @@ def create_allocation_request(
     dm_number: str,
     mobile_number: str,
     room_number: str,
-    intended_duration: str
+    intended_duration: str,
+    quantity: int = 1
 ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
     expire_stale_requests()
     conn = get_connection()
@@ -156,9 +165,13 @@ def create_allocation_request(
             conn.close()
             return False, f"Equipment ID '{equipment_id}' not found.", None
             
-        if eq['available_quantity'] <= 0:
+        if quantity <= 0:
             conn.close()
-            return False, f"Equipment '{eq['item_name']}' has no available units at this moment.", None
+            return False, "Requested quantity must be at least 1.", None
+            
+        if eq['available_quantity'] < quantity:
+            conn.close()
+            return False, f"Only {eq['available_quantity']} units of '{eq['item_name']}' available (requested {quantity}).", None
             
         now = datetime.now()
         req_id = f"REQ-{now.strftime('%Y%m%d')}-{now.strftime('%H%M%S%f')[:8]}"
@@ -167,24 +180,24 @@ def create_allocation_request(
         
         cursor.execute("""
             UPDATE equipment
-            SET available_quantity = available_quantity - 1,
-                pending_quantity = pending_quantity + 1,
+            SET available_quantity = available_quantity - ?,
+                pending_quantity = pending_quantity + ?,
                 updated_at = ?
-            WHERE equipment_id = ? AND available_quantity > 0
-        """, (req_at, equipment_id))
+            WHERE equipment_id = ? AND available_quantity >= ?
+        """, (quantity, quantity, req_at, equipment_id, quantity))
         
         if cursor.rowcount == 0:
             conn.close()
-            return False, "Could not reserve item due to concurrent allocation. Please retry.", None
+            return False, "Could not reserve items due to concurrent allocation. Please retry.", None
             
         cursor.execute("""
             INSERT INTO allocation_requests (
-                request_id, equipment_id, equipment_name, category,
+                request_id, equipment_id, equipment_name, category, quantity,
                 student_name, dm_number, mobile_number, room_number,
                 intended_duration, status, requested_at, expires_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending Verification', ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending Verification', ?, ?)
         """, (
-            req_id, equipment_id, eq['item_name'], eq['category'],
+            req_id, equipment_id, eq['item_name'], eq['category'], quantity,
             student_name.strip(), dm_number.strip().upper(),
             mobile_number.strip(), room_number.strip().upper(),
             intended_duration, req_at, expires_at
@@ -193,7 +206,7 @@ def create_allocation_request(
         cursor.execute("""
             INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
             VALUES (?, ?, 'REQUEST_CREATED', ?, ?)
-        """, (req_at, equipment_id, f"Request {req_id} submitted by {student_name} ({dm_number}). 30-min timer started.", student_name))
+        """, (req_at, equipment_id, f"Request {req_id} ({quantity}x {eq['item_name']}) submitted by {student_name} ({dm_number}). 30-min timer started.", student_name))
         
         conn.commit()
         
@@ -202,6 +215,7 @@ def create_allocation_request(
             "equipment_id": equipment_id,
             "equipment_name": eq['item_name'],
             "category": eq['category'],
+            "quantity": quantity,
             "student_name": student_name,
             "dm_number": dm_number.upper(),
             "mobile_number": mobile_number,
@@ -212,7 +226,7 @@ def create_allocation_request(
             "expires_at": expires_at
         }
         conn.close()
-        return True, "Request submitted successfully! Present your physical ID card to the guard within 30 minutes.", req_data
+        return True, f"Request submitted for {quantity}x {eq['item_name']}! Present your ID card to the guard within 30 mins.", req_data
         
     except Exception as e:
         conn.rollback()
@@ -241,6 +255,7 @@ def approve_allocation_request(request_id: str, guard_name: str = "Duty Guard") 
             return False, f"Cannot approve request with current status '{req['status']}'."
             
         now_iso = datetime.now().isoformat()
+        qty = req['quantity'] if 'quantity' in req.keys() else 1
         
         cursor.execute("""
             UPDATE allocation_requests
@@ -252,20 +267,20 @@ def approve_allocation_request(request_id: str, guard_name: str = "Duty Guard") 
         
         cursor.execute("""
             UPDATE equipment
-            SET pending_quantity = MAX(0, pending_quantity - 1),
-                in_use_quantity = in_use_quantity + 1,
+            SET pending_quantity = MAX(0, pending_quantity - ?),
+                in_use_quantity = in_use_quantity + ?,
                 updated_at = ?
             WHERE equipment_id = ?
-        """, (now_iso, req['equipment_id']))
+        """, (qty, qty, now_iso, req['equipment_id']))
         
         cursor.execute("""
             INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
             VALUES (?, ?, 'GUARD_APPROVED', ?, ?)
-        """, (now_iso, req['equipment_id'], f"Authorized checkout for {req['student_name']} ({req['dm_number']}) by {guard_name}.", guard_name))
+        """, (now_iso, req['equipment_id'], f"Authorized checkout ({qty}x {req['equipment_name']}) for {req['student_name']} ({req['dm_number']}) by {guard_name}.", guard_name))
         
         conn.commit()
         conn.close()
-        return True, f"Checkout approved! {req['equipment_name']} is now marked 'In Use' by {req['student_name']}."
+        return True, f"Checkout approved! {qty}x {req['equipment_name']} marked 'In Use' by {req['student_name']}."
         
     except Exception as e:
         conn.rollback()
@@ -295,6 +310,7 @@ def return_equipment(
             
         now_iso = datetime.now().isoformat()
         is_damaged = return_condition in ["Damaged / Broken", "Missing Parts"]
+        qty = req['quantity'] if 'quantity' in req.keys() else 1
         
         cursor.execute("""
             UPDATE allocation_requests
@@ -308,29 +324,29 @@ def return_equipment(
         if is_damaged:
             cursor.execute("""
                 UPDATE equipment
-                SET in_use_quantity = MAX(0, in_use_quantity - 1),
-                    damaged_quantity = damaged_quantity + 1,
+                SET in_use_quantity = MAX(0, in_use_quantity - ?),
+                    damaged_quantity = damaged_quantity + ?,
                     condition = ?,
                     updated_at = ?
                 WHERE equipment_id = ?
-            """, (return_condition, now_iso, req['equipment_id']))
+            """, (qty, qty, return_condition, now_iso, req['equipment_id']))
         else:
             cursor.execute("""
                 UPDATE equipment
-                SET in_use_quantity = MAX(0, in_use_quantity - 1),
-                    available_quantity = available_quantity + 1,
+                SET in_use_quantity = MAX(0, in_use_quantity - ?),
+                    available_quantity = available_quantity + ?,
                     updated_at = ?
                 WHERE equipment_id = ?
-            """, (now_iso, req['equipment_id']))
+            """, (qty, qty, now_iso, req['equipment_id']))
             
         cursor.execute("""
             INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
             VALUES (?, ?, 'RETURNED', ?, ?)
-        """, (now_iso, req['equipment_id'], f"Returned by {req['student_name']} ({req['dm_number']}). Condition: {return_condition}. Notes: {guard_notes}", guard_name))
+        """, (now_iso, req['equipment_id'], f"Returned {qty}x {req['equipment_name']} by {req['student_name']} ({req['dm_number']}). Condition: {return_condition}.", guard_name))
         
         conn.commit()
         conn.close()
-        return True, f"Equipment '{req['equipment_name']}' successfully checked in. Status reset to Available."
+        return True, f"{qty}x '{req['equipment_name']}' successfully checked in. Status reset to Available."
         
     except Exception as e:
         conn.rollback()
@@ -354,6 +370,7 @@ def cancel_request(request_id: str, reason: str = "Cancelled by User") -> Tuple[
             return False, f"Cannot cancel request with status '{req['status']}'."
             
         now_iso = datetime.now().isoformat()
+        qty = req['quantity'] if 'quantity' in req.keys() else 1
         
         cursor.execute("""
             UPDATE allocation_requests
@@ -363,15 +380,15 @@ def cancel_request(request_id: str, reason: str = "Cancelled by User") -> Tuple[
         
         cursor.execute("""
             UPDATE equipment
-            SET pending_quantity = MAX(0, pending_quantity - 1),
-                available_quantity = available_quantity + 1,
+            SET pending_quantity = MAX(0, pending_quantity - ?),
+                available_quantity = available_quantity + ?,
                 updated_at = ?
             WHERE equipment_id = ?
-        """, (now_iso, req['equipment_id']))
+        """, (qty, qty, now_iso, req['equipment_id']))
         
         conn.commit()
         conn.close()
-        return True, "Request cancelled and inventory unblocked."
+        return True, f"Request cancelled and {qty} unit(s) unblocked."
     except Exception as e:
         conn.rollback()
         conn.close()
