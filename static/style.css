@@ -1,0 +1,217 @@
+/* Sports Equipment Digital Management System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+html, body, [class*='css'] {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+.main .block-container {
+    padding-top: 1.25rem;
+    padding-bottom: 3rem;
+    max-width: 1200px;
+}
+
+/* Header */
+.app-header {
+    background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+    color: #FFFFFF !important;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border: 1px solid #334155;
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #FFFFFF !important;
+}
+
+.app-header p {
+    margin: 0.35rem 0 0 0;
+    color: #94A3B8 !important;
+    font-size: 0.92rem;
+}
+
+/* Stat Cards */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: #1E293B !important;
+    border: 1px solid #334155 !important;
+    border-radius: 10px;
+    padding: 1.25rem;
+}
+
+.stat-card .label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #94A3B8 !important;
+    margin-bottom: 0.25rem;
+}
+
+.stat-card .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #F8FAFC !important;
+}
+
+/* Section Card */
+.content-card {
+    background: #1E293B !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: #F8FAFC !important;
+}
+
+.content-card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #F8FAFC !important;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 0.75rem;
+}
+
+/* ALL LABELS BOLD WHITE */
+label,
+label p,
+[data-testid='stWidgetLabel'],
+[data-testid='stWidgetLabel'] p,
+.stTextInput label,
+.stSelectbox label,
+.stNumberInput label,
+.stTextArea label,
+.stCheckbox label,
+.stRadio label {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    font-size: 0.98rem !important;
+    display: block !important;
+}
+
+/* White input boxes with clear dark text */
+.stTextInput input,
+.stTextArea textarea,
+.stNumberInput input {
+    color: #0F172A !important;
+    background-color: #FFFFFF !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+}
+
+/* Status Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.badge-available { background-color: #064E3B; color: #34D399; border: 1px solid #059669; }
+.badge-pending { background-color: #78350F; color: #FCD34D; border: 1px solid #D97706; }
+.badge-in-use { background-color: #312E81; color: #A5B4FC; border: 1px solid #6366F1; }
+.badge-returned { background-color: #334155; color: #CBD5E1; border: 1px solid #475569; }
+.badge-damaged { background-color: #7F1D1D; color: #FCA5A5; border: 1px solid #DC2626; }
+.badge-expired { background-color: #1F2937; color: #9CA3AF; border: 1px solid #374151; }
+
+.timer-pill {
+    display: inline-flex;
+    align-items: center;
+    font-family: monospace;
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    background: #78350F;
+    color: #FDE68A;
+    border: 1px solid #D97706;
+}
+
+.timer-pill.urgent {
+    background: #7F1D1D;
+    color: #FECACA;
+    border-color: #EF4444;
+}
+
+.eq-card {
+    background: #0F172A !important;
+    border: 1px solid #334155 !important;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    color: #F8FAFC !important;
+}
+
+.eq-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: #F8FAFC !important;
+}
+
+.eq-meta {
+    font-size: 0.85rem;
+    color: #94A3B8 !important;
+    margin-bottom: 0.5rem;
+}
+
+.verification-box {
+    background: #0F172A;
+    border: 1px solid #334155;
+    border-left: 4px solid #6366F1;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    color: #F8FAFC;
+}
+
+.peer-card {
+    background: #0F172A;
+    border: 1px solid #334155;
+    border-left: 4px solid #6366F1;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.peer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    background: #1E293B;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    margin-top: 0.75rem;
+}
+
+.peer-label {
+    font-size: 0.75rem;
+    color: #94A3B8;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.peer-value {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #F8FAFC;
+}

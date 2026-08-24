@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+*.class
+*.db
+.system_generated/
+.streamlit/secrets.toml
