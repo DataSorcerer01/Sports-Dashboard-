@@ -1,5 +1,6 @@
 import re
 import streamlit as st
+import pandas as pd
 from datetime import datetime
 from db import (
     get_all_equipment, create_allocation_request,
@@ -14,28 +15,26 @@ from components.ui_helpers import (
 
 
 def render_student_portal():
-    st.markdown("### Student Equipment Allocation & Inventory")
-    st.caption("Select your desired sports equipment, fill in borrower details, and submit a 30-minute allocation request.")
+    st.markdown("### Student Equipment Allocation & Tracking")
+    st.caption("Submit equipment requests, monitor your 30-minute verification countdown, and view active borrowers.")
     
     all_equipment = get_all_equipment()
     available_items = [eq for eq in all_equipment if eq['available_quantity'] > 0]
     
     # -------------------------------------------------------------
-    # SECTION 1: Allocation Request Form & Live Inventory
+    # TOP BALANCED 2-COLUMN SECTION: ALLOCATION FORM + TIMER & INVENTORY
     # -------------------------------------------------------------
-    st.markdown("#### 1. Select Equipment & Submit Request")
+    col_form, col_right = st.columns([1.1, 0.9], gap="large")
     
-    if not available_items:
-        st.warning("All sports equipment is currently checked out or in use. Please check the Peer Directory below to coordinate with active borrowers.")
-    else:
-        col_form, col_summary = st.columns([1.2, 0.8], gap="large")
-        
-        with col_form:
-            with st.container(border=True):
-                st.subheader("Borrower Allocation Form")
-                
+    with col_form:
+        with st.container(border=True):
+            st.markdown("#### Borrower Allocation Form")
+            st.caption("Select sports gear and fill in your details to reserve equipment.")
+            
+            if not available_items:
+                st.warning("All equipment is currently in use. Check the Peer Directory below to coordinate handovers.")
+            else:
                 with st.form(key="student_request_form", clear_on_submit=False):
-                    # Equipment Options (Strict 1-word clean name)
                     eq_options = {
                         f"{eq['item_name']} ({eq['available_quantity']} Available)": eq['equipment_id']
                         for eq in available_items
@@ -45,47 +44,46 @@ def render_student_portal():
                         "Select Sports Equipment",
                         options=list(eq_options.keys()),
                         index=0,
-                        help="Choose the sports equipment item you wish to borrow from the sports room."
+                        help="Choose equipment item to borrow."
                     )
                     selected_eq_id = eq_options[selected_label]
                     
                     # Student Details
-                    col1, col2 = st.columns(2)
-                    with col1:
+                    c1, c2 = st.columns(2)
+                    with c1:
                         student_name = st.text_input(
                             "Student Full Name",
                             placeholder="e.g., Rahul Sharma",
-                            help="Enter your name as printed on your campus student ID card."
+                            help="Name printed on student ID."
                         )
-                    with col2:
+                    with c2:
                         dm_number = st.text_input(
                             "DM Number (Student ID)",
                             placeholder="e.g., DM2024-1052",
-                            help="Your unique DM roll/registration number for verification at the security desk."
+                            help="Your unique DM roll number."
                         )
                         
-                    col3, col4 = st.columns(2)
-                    with col3:
+                    c3, c4 = st.columns(2)
+                    with c3:
                         mobile_number = st.text_input(
                             "Mobile Phone Number",
                             placeholder="e.g., 9876543210",
-                            help="10-digit active phone number."
+                            help="10-digit mobile number."
                         )
-                    with col4:
+                    with c4:
                         room_number = st.text_input(
                             "Hostel Room Number",
                             placeholder="e.g., Block B - 204",
-                            help="Your campus hostel block and room number."
+                            help="Hostel block & room number."
                         )
                         
                     intended_duration = st.selectbox(
-                        "Intended Usage Duration",
+                        "Intended Play Duration",
                         options=USAGE_DURATIONS,
-                        index=1,
-                        help="Estimated play time. Equipment should be returned promptly once finished."
+                        index=1
                     )
                     
-                    st.info("Submitting this form temporarily reserves 1 unit and starts a strict 30-minute timer. Please visit the sports security desk with your physical ID card before the timer expires.")
+                    st.info("Submitting starts a strict 30-minute validity timer. Present your physical ID card to the guard before expiry.")
                     
                     submit_btn = st.form_submit_button("Submit Allocation Request", use_container_width=True, type="primary")
                     
@@ -96,13 +94,13 @@ def render_student_portal():
                         if not dm_number.strip():
                             val_errors.append("DM Number is required.")
                         elif len(dm_number.strip()) < 4:
-                            val_errors.append("DM Number must be at least 4 characters long (e.g., DM2024-1052).")
+                            val_errors.append("DM Number must be at least 4 characters long.")
                             
                         clean_phone = re.sub(r"[^\d]", "", mobile_number.strip())
                         if not clean_phone:
                             val_errors.append("Mobile Phone Number is required.")
                         elif len(clean_phone) != 10:
-                            val_errors.append(f"Mobile Phone Number must be exactly 10 digits (found {len(clean_phone)} digits).")
+                            val_errors.append(f"Mobile Phone Number must be 10 digits (found {len(clean_phone)}).")
                             
                         if not room_number.strip():
                             val_errors.append("Hostel Room Number is required.")
@@ -111,7 +109,7 @@ def render_student_portal():
                             for err in val_errors:
                                 st.error(err)
                         else:
-                            with st.spinner("Processing request and reserving equipment..."):
+                            with st.spinner("Reserving equipment..."):
                                 ok, msg, req_data = create_allocation_request(
                                     equipment_id=selected_eq_id,
                                     student_name=student_name,
@@ -127,96 +125,86 @@ def render_student_portal():
                                 else:
                                     st.error(msg)
                                     
-        with col_summary:
-            with st.container(border=True):
-                st.subheader("Live Sports Inventory")
-                for eq in all_equipment:
-                    avail_color = "#059669" if eq['available_quantity'] > 0 else "#DC2626"
-                    st.markdown(f"""
-                    <div class="eq-card">
-                        <div class="eq-card-header">
-                            <div class="eq-title">{eq['item_name']}</div>
-                            <span style="font-weight: 700; color: {avail_color}; font-size: 0.9rem;">
-                                {eq['available_quantity']} / {eq['total_quantity']} Avail
-                            </span>
-                        </div>
-                        <div class="eq-meta">
-                            <strong>Category:</strong> {eq['category']} &bull; 
-                            <strong>Rack:</strong> {eq['location_rack']}
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+    with col_right:
+        # 1. Active Request Status Lookup (Right at the top beside the form!)
+        with st.container(border=True):
+            st.markdown("#### My Active Request Status & Timer")
+            my_dm = st.text_input("Lookup by DM Number:", placeholder="e.g., DM2024-1052").strip().upper()
+            
+            if my_dm:
+                active_reqs = get_student_active_requests(my_dm)
+                if not active_reqs:
+                    st.info(f"No active requests found for {my_dm}")
+                else:
+                    for req in active_reqs:
+                        h1, h2 = st.columns([2, 1])
+                        with h1:
+                            st.markdown(f"**{req['equipment_name']}**")
+                            st.caption(f"ID: `{req['request_id']}`")
+                        with h2:
+                            st.markdown(render_status_badge(req['status']), unsafe_allow_html=True)
+                            
+                        if req['status'] == 'Pending Verification':
+                            time_str, mins_left, is_expired, is_urgent = calculate_time_remaining(req['expires_at'])
+                            timer_class = "timer-pill urgent" if is_urgent else "timer-pill"
+                            
+                            st.markdown(f"""
+                            <div style="margin: 0.5rem 0;">
+                                <span class="{timer_class}">Timer: {time_str}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            if st.button("Cancel Request", key=f"cancel_{req['request_id']}", use_container_width=True):
+                                ok_c, msg_c = cancel_request(req['request_id'], reason="Cancelled by Student")
+                                if ok_c:
+                                    st.success(msg_c)
+                                    st.rerun()
+                                else:
+                                    st.error(msg_c)
+                        elif req['status'] == 'In Use':
+                            st.markdown(f"""
+                            <div style="background: #EFF6FF; border-left: 3px solid #2563EB; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.85rem; color: #1E40AF; margin-top: 0.25rem;">
+                                Authorized by {req.get('guard_name', 'Guard')} at {format_iso_time(req.get('authorized_at'))}.
+                            </div>
+                            """, unsafe_allow_html=True)
+            else:
+                st.caption("Enter your DM number above to view active requests and countdown timers.")
+
+        # 2. Live Inventory Stock Table
+        with st.container(border=True):
+            st.markdown("#### Live Equipment Stock")
+            inv_data = [
+                {
+                    "Equipment": eq['item_name'],
+                    "Category": eq['category'],
+                    "Available": f"{eq['available_quantity']} / {eq['total_quantity']}",
+                    "Rack": eq['location_rack']
+                }
+                for eq in all_equipment
+            ]
+            st.dataframe(pd.DataFrame(inv_data), use_container_width=True, hide_index=True)
 
     # -------------------------------------------------------------
-    # SECTION 2: Active Request Status & 30-Min Countdown
+    # BOTTOM SECTION: PEER TRANSPARENCY DIRECTORY
     # -------------------------------------------------------------
     st.divider()
-    st.markdown("#### 2. Check My Active Request Status & Timer")
-    
-    col_lookup1, col_lookup2 = st.columns([1.5, 1])
-    with col_lookup1:
-        my_dm = st.text_input("Enter your DM Number to check active requests:", placeholder="e.g., DM2024-1052").strip().upper()
-        
-    if my_dm:
-        active_reqs = get_student_active_requests(my_dm)
-        if not active_reqs:
-            st.info(f"No active requests found for DM Number: {my_dm}")
-        else:
-            for req in active_reqs:
-                with st.container(border=True):
-                    h1, h2 = st.columns([2, 1])
-                    with h1:
-                        st.markdown(f"### {req['equipment_name']}")
-                        st.caption(f"Request ID: `{req['request_id']}` | Requested: {format_iso_time(req['requested_at'])}")
-                    with h2:
-                        st.markdown(render_status_badge(req['status']), unsafe_allow_html=True)
-                        
-                    if req['status'] == 'Pending Verification':
-                        time_str, mins_left, is_expired, is_urgent = calculate_time_remaining(req['expires_at'])
-                        timer_class = "timer-pill urgent" if is_urgent else "timer-pill"
-                        
-                        st.markdown(f"""
-                        <div style="margin: 0.75rem 0;">
-                            <strong>Verification Timer:</strong> 
-                            <span class="{timer_class}">Validity: {time_str}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        st.markdown("""
-                        <div style="background: #FFFBEB; border-left: 4px solid #F59E0B; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; color: #92400E; margin-bottom: 0.75rem;">
-                            <strong>Next Step:</strong> Visit the sports security desk and present your physical student ID card to the guard on duty.
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        if st.button("Cancel My Request", key=f"cancel_{req['request_id']}"):
-                            ok_c, msg_c = cancel_request(req['request_id'], reason="Cancelled by Student")
-                            if ok_c:
-                                st.success(msg_c)
-                                st.rerun()
-                            else:
-                                st.error(msg_c)
-                    elif req['status'] == 'In Use':
-                        st.markdown(f"""
-                        <div style="background: #EFF6FF; border-left: 4px solid #2563EB; padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; color: #1E40AF;">
-                            <strong>Checkout Authorized:</strong> Issued by {req.get('guard_name', 'Security Guard')} at {format_iso_time(req.get('authorized_at'))}. Return upon session completion.
-                        </div>
-                        """, unsafe_allow_html=True)
-
-    # -------------------------------------------------------------
-    # SECTION 3: Peer Transparency Directory
-    # -------------------------------------------------------------
-    st.divider()
-    st.markdown("#### 3. Peer Transparency Directory (Currently In-Use Equipment)")
-    st.caption("Contact peers who currently have equipment checked out to coordinate smooth handovers and play sessions.")
+    st.markdown("#### Peer Transparency Directory (Currently In-Use Equipment)")
+    st.caption("Contact peers who currently have equipment checked out to coordinate handovers.")
     
     in_use_checkouts = get_active_checkouts()
     if not in_use_checkouts:
         st.info("No equipment is currently in use. All items are available in the sports room.")
     else:
-        for item in in_use_checkouts:
-            with st.container(border=True):
-                c1, c2, c3, c4 = st.columns(4)
-                c1.markdown(f"**Equipment**<br>`{item['equipment_name']}`", unsafe_allow_html=True)
-                c2.markdown(f"**Borrower**<br>`{item['student_name']}` ({item['dm_number']})", unsafe_allow_html=True)
-                c3.markdown(f"**Contact**<br>`{item['mobile_number']}` (Room: {item['room_number']})", unsafe_allow_html=True)
-                c4.markdown(f"**Issued At**<br>`{format_iso_time(item.get('authorized_at'))}`", unsafe_allow_html=True)
+        peer_data = [
+            {
+                "Equipment": item['equipment_name'],
+                "Borrower Name": item['student_name'],
+                "DM Number": item['dm_number'],
+                "Phone": item['mobile_number'],
+                "Hostel Room": item['room_number'],
+                "Issued At": format_iso_time(item.get('authorized_at')),
+                "Duration": item['intended_duration']
+            }
+            for item in in_use_checkouts
+        ]
+        st.dataframe(pd.DataFrame(peer_data), use_container_width=True, hide_index=True)
