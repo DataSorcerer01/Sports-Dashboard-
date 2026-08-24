@@ -1,28 +1,16 @@
-/* Campus Sports Management System - Premium High Contrast Light & Dark Blue Theme */
+/* Campus Sports Management System - Clean Arial Theme */
 
-html, body, .stApp {
-    font-family: Arial, Helvetica, sans-serif !important;
-    background-color: #F0F7FF !important;
-    color: #0F172A !important;
-}
-
-h1, h2, h3, h4, h5, h6,
-p, label, input, textarea,
-.stTextInput input, .stTextArea textarea, .stNumberInput input,
+/* Global text styling using Arial */
+html, body, .stApp, 
+h1, h2, h3, h4, h5, h6, 
+p, span, div, a, label, input, button, select, textarea,
 [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p {
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* Preserve Streamlit Material Icons & Arrows */
-[data-testid="stIcon"],
-[data-testid="stSidebarCollapseButton"] *,
-button[data-testid="stSidebarCollapseButton"] span,
-.material-icons,
-[class*="material-symbols"],
-[class*="material-icons"],
-div[data-testid="stExpander"] summary *,
-summary span:first-child {
-    font-family: 'Material Symbols Rounded', 'Material Icons', 'Segoe UI Symbol', sans-serif !important;
+.stApp {
+    background-color: #F0F7FF !important;
+    color: #0F172A !important;
 }
 
 .main .block-container {
@@ -32,7 +20,7 @@ summary span:first-child {
 }
 
 /* =============================================================
-   ELEGANT WHITE & BLUE HEADER BANNER (NO DARK BLUE OVERLAYS)
+   TOP APP HEADER BANNER (WHITE CARD WITH ROYAL BLUE ACCENT)
    ============================================================= */
 .app-header {
     background: #FFFFFF !important;
@@ -95,8 +83,7 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid #BFDBFE !important;
 }
 
-section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] div:not([data-testid="stIcon"]) {
+section[data-testid="stSidebar"] * {
     color: #0F2942 !important;
     font-family: Arial, Helvetica, sans-serif;
 }
@@ -280,7 +267,7 @@ ul[role="listbox"] li:hover {
 .timer-pill {
     display: inline-flex;
     align-items: center;
-    font-family: Arial, monospace, sans-serif !important;
+    font-family: Arial, sans-serif !important;
     font-size: 0.92rem;
     font-weight: 700;
     padding: 0.35rem 0.85rem;
@@ -296,32 +283,12 @@ ul[role="listbox"] li:hover {
     border-color: #FECACA;
 }
 
-/* Equipment Card */
-.eq-card {
-    background: #F8FAFC !important;
-    border: 1px solid #DBEAFE !important;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-}
-
-.eq-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.35rem;
-}
-
-.eq-title {
-    font-weight: 700;
-    font-size: 1.05rem;
-    color: #0F2942 !important;
-    font-family: Arial, Helvetica, sans-serif !important;
-}
-
-.eq-meta {
-    font-size: 0.85rem;
-    color: #334155 !important;
-    margin-bottom: 0.35rem;
-    font-family: Arial, Helvetica, sans-serif !important;
+/* Facility Card */
+.facility-card {
+    background: #FFFFFF !important;
+    border: 1px solid #BFDBFE !important;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 6px rgba(30, 58, 138, 0.04);
 }
