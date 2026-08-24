@@ -7,8 +7,8 @@ from components.ui_helpers import format_iso_time
 
 
 def render_court_tracker():
-    st.markdown("### ??? Live Campus Courts & Facility Availability Tracker")
-    st.caption("Real-time occupancy status for campus sports courts, grounds, and recreation tables. Check if a court is currently free or occupied before heading over.")
+    st.markdown("### Campus Courts & Facility Availability Tracker")
+    st.caption("Real-time occupancy status for campus sports courts, grounds, and recreation tables.")
     
     court_stats = get_court_stats()
     
@@ -17,7 +17,7 @@ def render_court_tracker():
     <div class="stat-grid">
         <div class="stat-card">
             <div class="label">Total Facilities</div>
-            <div class="value" style="color: #0F172A;">{court_stats.get('total', 14)}</div>
+            <div class="value" style="color: #0F2942;">{court_stats.get('total', 14)}</div>
         </div>
         <div class="stat-card" style="border-left: 4px solid #10B981 !important;">
             <div class="label">Available Now</div>
@@ -56,28 +56,29 @@ def render_court_tracker():
     for idx, court in enumerate(filtered_courts):
         col_target = cols[idx % 2]
         is_occupied = court['status'] == 'Occupied'
-        status_color = "#DC2626" if is_occupied else "#059669"
+        status_color = "#991B1B" if is_occupied else "#065F46"
         status_bg = "#FEF2F2" if is_occupied else "#ECFDF5"
-        status_text = "?? Occupied / In Play" if is_occupied else "?? Available to Play"
+        status_border = "#FECACA" if is_occupied else "#A7F3D0"
+        status_text = "Occupied / In Play" if is_occupied else "Available to Play"
         
         with col_target:
             with st.container(border=True):
                 # Header with Status
-                h1, h2 = st.columns([2, 1])
+                h1, h2 = st.columns([2, 1.2])
                 with h1:
                     st.markdown(f"### {court['court_name']}")
-                    st.markdown(f"?? **Venue**: `{court['location_venue']}` &bull; ?? **Sport**: `{court['sport_type']}`")
+                    st.markdown(f"**Venue:** `{court['location_venue']}` | **Sport:** `{court['sport_type']}`")
                 with h2:
                     st.markdown(f"""
                     <div style="text-align: right; margin-top: 0.25rem;">
-                        <span style="display: inline-block; padding: 0.35rem 0.75rem; border-radius: 9999px; font-weight: 700; font-size: 0.8rem; background: {status_bg}; color: {status_color}; border: 1px solid {status_color}40;">
+                        <span style="display: inline-block; padding: 0.35rem 0.75rem; border-radius: 9999px; font-weight: 700; font-size: 0.8rem; background: {status_bg}; color: {status_color}; border: 1px solid {status_border};">
                             {status_text}
                         </span>
                     </div>
                     """, unsafe_allow_html=True)
                 
                 if court.get('notes'):
-                    st.caption(f"?? {court['notes']}")
+                    st.caption(f"Info: {court['notes']}")
                     
                 st.divider()
                 
@@ -85,20 +86,20 @@ def render_court_tracker():
                     # Display Occupant Details
                     st.markdown(f"""
                     <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 0.85rem; margin-bottom: 0.75rem;">
-                        <div style="font-size: 0.8rem; color: #64748B; font-weight: 700; text-transform: uppercase;">Current Occupant Info</div>
-                        <div style="font-size: 1rem; font-weight: 700; color: #0F172A; margin-top: 0.2rem;">
-                            ?? {court['current_occupant']} <span style="font-size: 0.85rem; color: #475569;">({court['dm_number']})</span>
+                        <div style="font-size: 0.8rem; color: #1E3A8A; font-weight: 700; text-transform: uppercase;">Current Occupant Info</div>
+                        <div style="font-size: 1rem; font-weight: 700; color: #0F2942; margin-top: 0.2rem;">
+                            Player: {court['current_occupant']} <span style="font-size: 0.85rem; color: #475569;">({court['dm_number']})</span>
                         </div>
                         <div style="font-size: 0.85rem; color: #334155; margin-top: 0.35rem;">
-                            ?? <strong>Phone:</strong> {court['contact_number']} &bull; ?? <strong>Room:</strong> {court['hostel_room']}
+                            Phone: <strong>{court['contact_number']}</strong> | Room: <strong>{court['hostel_room']}</strong>
                         </div>
                         <div style="font-size: 0.82rem; color: #64748B; margin-top: 0.25rem;">
-                            ?? <strong>Playing Since:</strong> {format_iso_time(court['occupied_since'])} &bull; ? <strong>Duration:</strong> {court['intended_duration']}
+                            Playing Since: <strong>{format_iso_time(court['occupied_since'])}</strong> | Duration: <strong>{court['intended_duration']}</strong>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    if st.button(f"?? Release / Check Out: {court['court_name']}", key=f"rel_{court['court_id']}", use_container_width=True):
+                    if st.button(f"Release Court: {court['court_name']}", key=f"rel_{court['court_id']}", use_container_width=True):
                         with st.spinner("Releasing court..."):
                             ok_rel, msg_rel = release_court(court['court_id'], released_by="Campus User / Guard")
                             if ok_rel:
@@ -108,7 +109,7 @@ def render_court_tracker():
                                 st.error(msg_rel)
                 else:
                     # Court is Available -> Check-In Accordion
-                    with st.expander(f"? Check-In / Start Session on {court['court_name']}", expanded=False):
+                    with st.expander(f"Check-In / Start Session on {court['court_name']}", expanded=False):
                         with st.form(key=f"occupy_form_{court['court_id']}"):
                             c1, c2 = st.columns(2)
                             with c1:
@@ -121,7 +122,7 @@ def render_court_tracker():
                             duration = st.selectbox("Intended Play Duration", options=USAGE_DURATIONS, index=2, key=f"dur_{court['court_id']}")
                             session_notes = st.text_input("Remarks / Match Type (Optional)", placeholder="e.g., 2v2 Doubles practice match", key=f"rem_{court['court_id']}")
                             
-                            checkin_btn = st.form_submit_button("?? Confirm Court Check-In", type="primary", use_container_width=True)
+                            checkin_btn = st.form_submit_button("Confirm Court Check-In", type="primary", use_container_width=True)
                             
                             if checkin_btn:
                                 if not player_name.strip():

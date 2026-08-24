@@ -1,9 +1,8 @@
 import streamlit as st
 from datetime import datetime
 from db import (
-    get_pending_requests, get_active_checkouts,
-    approve_allocation_request, return_equipment,
-    cancel_request, get_all_equipment
+    get_pending_requests, approve_allocation_request,
+    get_active_checkouts, return_equipment, get_all_equipment
 )
 from models import ReturnCondition
 from components.ui_helpers import (
@@ -23,92 +22,92 @@ def render_guard_dashboard():
             "Officer on Duty Name",
             value="Officer Rajesh (Main Sports Desk)",
             placeholder="e.g., Officer Rajesh",
-            help="Name or badge number of the guard currently operating the verification desk."
+            help="Your name will be stamped on all authorized checkout and return audit logs."
         )
         
-    tab_pending, tab_active, tab_returns = st.tabs([
+    tab_queue, tab_active, tab_returns = st.tabs([
         "Pending Verifications & Queue",
         "Active Checkouts Monitor",
         "Return Logs & Equipment Inspection"
     ])
     
     # -------------------------------------------------------------
-    # TAB 1: Pending Verifications & ID Check
+    # TAB 1: Pending Queue & ID Verification
     # -------------------------------------------------------------
-    with tab_pending:
-        st.markdown("#### Pending Student Allocation Requests")
-        st.caption("Students must present their physical ID card at the desk within 30 minutes of submitting their request.")
+    with tab_queue:
+        pending_list = get_pending_requests()
+        st.markdown(f"#### Pending ID Verification Queue ({len(pending_list)} requests waiting)")
         
-        pending_requests = get_pending_requests()
-        
-        if not pending_requests:
-            st.info("No pending verification requests right now. The queue is clear.")
+        if not pending_list:
+            st.info("No students are currently waiting in the verification queue. All submitted requests have been processed or expired.")
         else:
-            for req in pending_requests:
-                timer_str, mins_left, is_exp, is_urg = calculate_time_remaining(req['expires_at'])
+            for req in pending_list:
+                time_str, mins_left, is_expired, is_urgent = calculate_time_remaining(req['expires_at'])
+                timer_class = "timer-pill urgent" if is_urgent else "timer-pill"
                 
                 with st.container(border=True):
-                    c1, c2 = st.columns([2.5, 1.5])
-                    with c1:
+                    h1, h2 = st.columns([2.5, 1.5])
+                    with h1:
                         st.markdown(f"### {req['equipment_name']}")
-                        st.markdown(f"**Category**: `{req['category']}` &bull; **Request ID**: `{req['request_id']}`")
-                    with c2:
-                        st.markdown(render_status_badge(req['status']), unsafe_allow_html=True)
-                        urg_class = "timer-pill urgent" if is_urg else "timer-pill"
-                        st.markdown(f'<div class="{urg_class}">{timer_str}</div>', unsafe_allow_html=True)
+                        st.caption(f"Category: {req['category']} | Request ID: `{req['request_id']}`")
+                    with h2:
+                        st.markdown(f"""
+                        <div style="text-align: right;">
+                            <span class="{timer_class}">Validity: {time_str}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
                     st.divider()
                     
-                    # Student Details Grid
-                    sc1, sc2, sc3, sc4 = st.columns(4)
-                    sc1.markdown(f"**Student Name**<br>`{req['student_name']}`", unsafe_allow_html=True)
-                    sc2.markdown(f"**DM Number**<br>`{req['dm_number']}`", unsafe_allow_html=True)
-                    sc3.markdown(f"**Phone Number**<br>`{req['mobile_number']}`", unsafe_allow_html=True)
-                    sc4.markdown(f"**Hostel Room**<br>`{req['room_number']}`", unsafe_allow_html=True)
+                    b1, b2, b3, b4 = st.columns(4)
+                    b1.markdown(f"**Student Name**<br>`{req['student_name']}`", unsafe_allow_html=True)
+                    b2.markdown(f"**DM Number**<br>`{req['dm_number']}`", unsafe_allow_html=True)
+                    b3.markdown(f"**Phone**<br>`{req['mobile_number']}`", unsafe_allow_html=True)
+                    b4.markdown(f"**Hostel Room**<br>`{req['room_number']}`", unsafe_allow_html=True)
                     
-                    st.markdown('<div class="verification-box">', unsafe_allow_html=True)
-                    st.markdown("<strong>Mandatory Guard Authorization Checklist:</strong>", unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div style="background: #EFF6FF; border-left: 4px solid #1D4ED8; padding: 0.85rem; border-radius: 8px; margin: 0.75rem 0;">
+                        <strong style="color: #1E3A8A;">Mandatory Guard Verification Checklist:</strong>
+                        <ol style="margin: 0.25rem 0 0 1.25rem; font-size: 0.85rem; color: #1E293B;">
+                            <li>Inspect physical Student Identity Card presented by the student.</li>
+                            <li>Confirm student face matches the photo and DM number reads <strong>{req['dm_number']}</strong>.</li>
+                            <li>Confirm physical sports equipment unit is available and handed over.</li>
+                        </ol>
+                    </div>
+                    """, unsafe_allow_html=True)
                     
-                    id_verified = st.checkbox(
-                        f"Physical ID Card verified: DM '{req['dm_number']}' and photo match student '{req['student_name']}'",
-                        key=f"chk_id_{req['request_id']}"
+                    verify_checkbox = st.checkbox(
+                        f"I have inspected the physical ID card for {req['student_name']} ({req['dm_number']})",
+                        key=f"chk_verify_{req['request_id']}"
                     )
-                    gear_inspected = st.checkbox(
-                        f"Equipment condition checked prior to handover",
-                        value=True,
-                        key=f"chk_gear_{req['request_id']}"
-                    )
-                    st.markdown('</div>', unsafe_allow_html=True)
                     
                     btn_col1, btn_col2 = st.columns([2, 1])
                     with btn_col1:
-                        if st.button("Approve & Issue Equipment", key=f"approve_{req['request_id']}", type="primary", use_container_width=True):
-                            if not id_verified:
-                                st.error("Mandatory Requirement: You must verify the student's physical ID card before approving checkout!")
-                            else:
-                                with st.spinner("Authorizing checkout..."):
-                                    ok, msg = approve_allocation_request(req['request_id'], guard_name=guard_on_duty)
-                                    if ok:
-                                        st.success(msg)
-                                        st.rerun()
-                                    else:
-                                        st.error(msg)
-                                        
+                        if st.button(
+                            "Approve & Issue Equipment",
+                            key=f"approve_{req['request_id']}",
+                            type="primary",
+                            use_container_width=True,
+                            disabled=not verify_checkbox,
+                            help="Check the verification box above after reviewing the physical ID card to enable this button."
+                        ):
+                            with st.spinner("Authorizing checkout..."):
+                                ok, msg = approve_allocation_request(req['request_id'], guard_name=guard_on_duty)
+                                if ok:
+                                    st.success(msg)
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+                                    
                     with btn_col2:
-                        if st.button("Reject Request", key=f"reject_{req['request_id']}", use_container_width=True):
-                            ok_r, msg_r = cancel_request(req['request_id'], reason=f"Rejected by guard {guard_on_duty}")
-                            if ok_r:
-                                st.warning("Request rejected and gear returned to inventory.")
-                                st.rerun()
-                            else:
-                                st.error(msg_r)
+                        st.caption(f"Requested: {format_iso_time(req['requested_at'])}")
 
     # -------------------------------------------------------------
-    # TAB 2: Active Checkouts Monitor & Returns
+    # TAB 2: Active Checkouts Monitor
     # -------------------------------------------------------------
     with tab_active:
-        st.markdown("#### Currently Checked Out Equipment (In Use)")
         active_checkouts = get_active_checkouts()
+        st.markdown(f"#### Active Borrow Sessions ({len(active_checkouts)} items currently in use)")
         
         if not active_checkouts:
             st.info("No equipment is currently checked out. All inventory is secure in the sports room.")
@@ -176,18 +175,12 @@ def render_guard_dashboard():
             st.success("100% of equipment inventory is in good working order. No damaged items reported.")
         else:
             for d_item in damaged_items:
-                st.markdown(f"""
-                <div class="content-card" style="border-left: 4px solid #EF4444;">
-                    <div style="font-size: 1.1rem; font-weight: 700; color: #991B1B;">
-                        {d_item['item_name']} ({d_item['category']})
-                    </div>
-                    <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #334155;">
-                        <strong>Damaged Units:</strong> {d_item['damaged_quantity']} / {d_item['total_quantity']} &bull;
-                        <strong>Storage Rack:</strong> {d_item['location_rack']} &bull;
-                        <strong>Reported State:</strong> {d_item['condition']}
-                    </div>
-                    <div style="font-size: 0.85rem; color: #64748B; margin-top: 0.25rem;">
-                        {d_item.get('notes', '')}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                with st.container(border=True):
+                    st.markdown(f"### {d_item['item_name']} ({d_item['category']})")
+                    st.markdown(f"""
+                    **Damaged Units:** `{d_item['damaged_quantity']}` / `{d_item['total_quantity']}` | 
+                    **Rack:** `{d_item['location_rack']}` | 
+                    **Reported State:** `{d_item['condition']}`
+                    """)
+                    if d_item.get('notes'):
+                        st.caption(d_item['notes'])

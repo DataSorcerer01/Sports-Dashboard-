@@ -1,92 +1,87 @@
-import streamlit as st
+import io
 import pandas as pd
+import streamlit as st
 from db import (
     get_all_equipment, add_or_update_equipment,
-    get_recent_history, get_inventory_stats
+    get_recent_history, get_connection
 )
+from models import SPORTS_CATEGORIES, ReturnCondition
 from data_io import (
     generate_csv_template, generate_excel_template,
     parse_and_validate_file, commit_inventory_import
 )
-from models import SPORTS_CATEGORIES
-from components.ui_helpers import render_status_badge, format_iso_time
+from components.ui_helpers import format_iso_time
 
 
 def render_inventory_admin():
-    st.markdown("### Sports Inventory & Offline Data Hub")
-    st.caption("Manage campus gear stock counts, download standardized templates, bulk-import inventory spreadsheets, and inspect the chronological audit trail.")
+    st.markdown("### Inventory & Offline Data Management Hub")
+    st.caption("Add new sports gear, manage catalogue items, download/upload CSV & Excel batch files, and view audit trails.")
     
-    tab_catalog, tab_add, tab_bulk, tab_logs = st.tabs([
+    tab_overview, tab_add, tab_bulk, tab_audit = st.tabs([
         "Equipment Catalogue",
-        "Add New Equipment",
+        "Add / Edit Equipment",
         "Offline Batch Import/Export",
         "System Audit Trail"
     ])
     
     # -------------------------------------------------------------
-    # TAB 1: Catalogue Overview
+    # TAB 1: Equipment Catalogue
     # -------------------------------------------------------------
-    with tab_catalog:
-        st.markdown("#### Campus Sports Inventory Catalogue")
-        equipment_list = get_all_equipment()
+    with tab_overview:
+        equipment = get_all_equipment()
+        st.markdown(f"#### Active Campus Inventory ({len(equipment)} item models)")
         
-        if equipment_list:
-            df_display = pd.DataFrame(equipment_list)[[
+        if equipment:
+            df = pd.DataFrame(equipment)[[
                 'equipment_id', 'category', 'item_name', 'total_quantity',
                 'available_quantity', 'in_use_quantity', 'pending_quantity',
                 'damaged_quantity', 'location_rack', 'condition'
             ]]
-            df_display.columns = [
+            df.columns = [
                 'ID', 'Category', 'Item Name', 'Total', 'Available',
                 'In Use', 'Pending', 'Damaged', 'Location Rack', 'Condition'
             ]
-            st.dataframe(df_display, use_container_width=True, hide_index=True)
-        else:
-            st.warning("No equipment in inventory.")
-
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            
     # -------------------------------------------------------------
-    # TAB 2: Add New Equipment Form
+    # TAB 2: Add New Equipment
     # -------------------------------------------------------------
     with tab_add:
-        st.markdown("#### Register New Sports Equipment Item")
+        st.markdown("#### Add New Sports Equipment to Catalogue")
+        
         with st.form(key="add_equipment_form"):
-            col1, col2 = st.columns(2)
-            with col1:
+            c1, c2 = st.columns(2)
+            with c1:
                 eq_id = st.text_input(
-                    "Equipment Asset ID",
-                    placeholder="e.g., EQ-VB-002",
-                    help="Unique identifier for the gear item or set. Example: EQ-VB-002"
+                    "Equipment Asset ID (Unique)",
+                    placeholder="e.g., EQ-VB-001",
+                    help="Unique campus asset code for the equipment model."
                 )
-                category = st.selectbox(
-                    "Sports Category",
-                    options=SPORTS_CATEGORIES,
-                    help="Sports discipline for this equipment."
-                )
+                category = st.selectbox("Sport / Equipment Category", options=SPORTS_CATEGORIES, index=0)
                 item_name = st.text_input(
                     "Item Name & Model",
-                    placeholder="e.g., Cosco Super Volley Match Ball",
-                    help="Detailed item brand and model name. Example: Cosco Super Volley Match Ball"
-                )
-            with col2:
-                total_qty = st.number_input(
-                    "Total Quantity",
-                    min_value=1,
-                    value=5,
-                    step=1,
-                    help="Total number of units being added to inventory. Example: 5"
-                )
-                location_rack = st.text_input(
-                    "Storage Rack / Cabinet",
-                    placeholder="e.g., Ball Bin 3 (Court Locker)",
-                    help="Exact physical storage location in sports room. Example: Ball Bin 3"
-                )
-                condition = st.selectbox(
-                    "Initial Condition",
-                    options=["New", "Good Condition", "Minor Normal Wear"],
-                    help="Physical quality of the item when adding."
+                    placeholder="e.g., Mikasa MVA200 Competition Volleyball",
+                    help="Full descriptive name of the sports gear."
                 )
                 
-            notes = st.text_area(
+            with c2:
+                total_qty = st.number_input("Total Quantity Units", min_value=1, value=5, step=1)
+                location_rack = st.text_input(
+                    "Storage Rack / Cabinet Location",
+                    placeholder="e.g., Rack B-2 (Indoor Arena)",
+                    help="Exact physical location in the sports room."
+                )
+                condition = st.selectbox(
+                    "Initial Physical Condition",
+                    options=[
+                        ReturnCondition.GOOD.value,
+                        ReturnCondition.MINOR_WEAR.value,
+                        ReturnCondition.DAMAGED.value
+                    ],
+                    index=0
+                )
+                
+            notes = st.text_input(
                 "Additional Item Notes (Optional)",
                 placeholder="e.g., Includes ball pump needle and mesh carrier bag",
                 help="Any special maintenance instructions or included accessories."
@@ -114,10 +109,10 @@ def render_inventory_admin():
                     with st.spinner("Saving equipment..."):
                         ok, msg = add_or_update_equipment(item_dict)
                         if ok:
-                            st.success(f"{msg}")
+                            st.success(msg)
                             st.rerun()
                         else:
-                            st.error(f"{msg}")
+                            st.error(msg)
 
     # -------------------------------------------------------------
     # TAB 3: Batch Offline Import / Export
@@ -185,28 +180,22 @@ def render_inventory_admin():
     # -------------------------------------------------------------
     # TAB 4: System Audit Trail
     # -------------------------------------------------------------
-    with tab_logs:
-        st.markdown("#### Chronological Allocation & Activity Logs")
-        history = get_recent_history(limit=50)
-        if not history:
-            st.info("No allocation activity recorded yet.")
+    with tab_audit:
+        st.markdown("#### System Activity & Allocation Audit Logs")
+        st.caption("Full historical record of requests, checkout approvals, return condition checks, and auto-expirations.")
+        
+        conn = get_connection()
+        logs_df = pd.read_sql_query("""
+            SELECT log_id, timestamp, equipment_id, action_type, actor, details
+            FROM inventory_logs
+            ORDER BY log_id DESC
+            LIMIT 100
+        """, conn)
+        conn.close()
+        
+        if not logs_df.empty:
+            logs_df['timestamp'] = logs_df['timestamp'].apply(format_iso_time)
+            logs_df.columns = ['Log #', 'Timestamp', 'Equipment / Court ID', 'Action', 'Actor', 'Details']
+            st.dataframe(logs_df, use_container_width=True, hide_index=True)
         else:
-            for item in history:
-                status_color = "#10B981" if item['status'] == "Returned" else "#4F46E5" if item['status'] == "In Use" else "#F59E0B"
-                st.markdown(f"""
-                <div style="border-left: 3px solid {status_color}; background: #F8FAFC; padding: 0.85rem 1rem; border-radius: 6px; margin-bottom: 0.75rem; border-top: 1px solid #E2E8F0; border-right: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 600; color: #1E293B; font-size: 0.95rem;">
-                            {item['equipment_name']} &bull; Borrower: {item['student_name']} ({item['dm_number']})
-                        </span>
-                        <span>{render_status_badge(item['status'])}</span>
-                    </div>
-                    <div style="font-size: 0.82rem; color: #64748B; margin-top: 0.35rem;">
-                        <strong>Requested:</strong> {format_iso_time(item['requested_at'])} &bull; 
-                        <strong>Authorized:</strong> {format_iso_time(item.get('authorized_at'))} &bull; 
-                        <strong>Returned:</strong> {format_iso_time(item.get('returned_at'))} &bull; 
-                        <strong>Condition:</strong> {item.get('return_condition', 'N/A')}
-                    </div>
-                    {f"<div style='font-size: 0.8rem; color: #475569; margin-top: 0.25rem; font-style: italic;'>Notes: {item['guard_notes']}</div>" if item.get('guard_notes') else ""}
-                </div>
-                """, unsafe_allow_html=True)
+            st.info("No audit logs recorded yet. System activities will automatically appear here.")
