@@ -1,5 +1,5 @@
 """
-models.py - Core data schemas, enums, and validation constants for Sports Equipment System.
+models.py - Core data schemas, enums, and validation constants.
 """
 from dataclasses import dataclass
 from enum import Enum
@@ -31,28 +31,34 @@ class ReturnCondition(str, Enum):
     MISSING_PARTS = "Missing Parts"
 
 
+class CourtStatus(str, Enum):
+    AVAILABLE = "Available"
+    OCCUPIED = "Occupied"
+    MAINTENANCE = "Under Maintenance"
+
+
 SPORTS_CATEGORIES = [
     "Badminton",
-    "Football",
-    "Basketball",
     "Table Tennis",
+    "Pickleball",
+    "Tennis",
+    "Pool & Billiards",
+    "Carrom",
     "Cricket",
+    "Football",
     "Volleyball",
-    "Lawn Tennis",
-    "Squash",
     "Board Games"
 ]
 
 USAGE_DURATIONS = [
     "30 Minutes",
+    "45 Minutes",
     "1 Hour",
     "1.5 Hours",
     "2 Hours",
-    "3 Hours",
-    "Full Afternoon (4 Hours)"
+    "3 Hours"
 ]
 
-# Strict 30-Minute validity rule for student pending requests
 REQUEST_EXPIRY_MINUTES = 30
 
 
@@ -92,3 +98,19 @@ class AllocationRequest:
     returned_at: Optional[str] = None
     return_condition: Optional[str] = None
     guard_notes: Optional[str] = None
+
+
+@dataclass
+class CourtFacility:
+    court_id: str
+    court_name: str
+    sport_type: str
+    location_venue: str
+    status: str
+    current_occupant: Optional[str] = None
+    dm_number: Optional[str] = None
+    contact_number: Optional[str] = None
+    hostel_room: Optional[str] = None
+    occupied_since: Optional[str] = None
+    intended_duration: Optional[str] = None
+    notes: Optional[str] = None

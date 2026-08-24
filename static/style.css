@@ -1,30 +1,50 @@
-/* Sports Equipment Digital Management System */
+/* Sports Equipment & Courts Management - SaaS Modern Light Theme */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-html, body, [class*='css'] {
+:root {
+    --primary: #4F46E5;
+    --primary-dark: #3730A3;
+    --primary-light: #EEF2FF;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --slate-50: #F8FAFC;
+    --slate-100: #F1F5F9;
+    --slate-200: #E2E8F0;
+    --slate-700: #334155;
+    --slate-900: #0F172A;
+}
+
+html, body, [class*="css"] {
     font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
+/* Page Background */
+.stApp {
+    background-color: #F8FAFC !important;
+}
+
+/* Main Container spacing */
 .main .block-container {
     padding-top: 1.25rem;
     padding-bottom: 3rem;
     max-width: 1200px;
 }
 
-/* Header */
+/* App Header Banner */
 .app-header {
     background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
     color: #FFFFFF !important;
     padding: 1.5rem 2rem;
     border-radius: 12px;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
-    border: 1px solid #334155;
+    border: 1px solid #E2E8F0;
 }
 
 .app-header h1 {
@@ -32,6 +52,7 @@ html, body, [class*='css'] {
     font-size: 1.6rem;
     font-weight: 700;
     color: #FFFFFF !important;
+    letter-spacing: -0.02em;
 }
 
 .app-header p {
@@ -49,70 +70,76 @@ html, body, [class*='css'] {
 }
 
 .stat-card {
-    background: #1E293B !important;
-    border: 1px solid #334155 !important;
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
     border-radius: 10px;
     padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .stat-card .label {
     font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
-    color: #94A3B8 !important;
+    letter-spacing: 0.05em;
+    color: #64748B !important;
     margin-bottom: 0.25rem;
 }
 
 .stat-card .value {
     font-size: 1.8rem;
     font-weight: 700;
-    color: #F8FAFC !important;
+    color: #0F172A !important;
 }
 
-/* Section Card */
-.content-card {
-    background: #1E293B !important;
-    border: 1px solid #334155 !important;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    color: #F8FAFC !important;
+/* Native Streamlit Bordered Container as Clean Card */
+div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    padding: 1.25rem !important;
 }
 
-.content-card-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #F8FAFC !important;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid #334155;
-    padding-bottom: 0.75rem;
-}
-
-/* ALL LABELS BOLD WHITE */
+/* High Contrast Input Labels for Light Theme */
 label,
 label p,
-[data-testid='stWidgetLabel'],
-[data-testid='stWidgetLabel'] p,
+[data-testid="stWidgetLabel"],
+[data-testid="stWidgetLabel"] p,
 .stTextInput label,
 .stSelectbox label,
 .stNumberInput label,
 .stTextArea label,
 .stCheckbox label,
 .stRadio label {
-    color: #FFFFFF !important;
+    color: #0F172A !important;
     font-weight: 700 !important;
-    font-size: 0.98rem !important;
+    font-size: 0.95rem !important;
     display: block !important;
 }
 
-/* White input boxes with clear dark text */
+/* Input Fields */
 .stTextInput input,
 .stTextArea textarea,
 .stNumberInput input {
     color: #0F172A !important;
     background-color: #FFFFFF !important;
-    font-weight: 600 !important;
+    border: 1px solid #CBD5E1 !important;
+    font-weight: 500 !important;
     border-radius: 6px !important;
+}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus,
+.stNumberInput input:focus {
+    border-color: #4F46E5 !important;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2) !important;
 }
 
 /* Status Badges */
@@ -124,15 +151,17 @@ label p,
     font-size: 0.78rem;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
-.badge-available { background-color: #064E3B; color: #34D399; border: 1px solid #059669; }
-.badge-pending { background-color: #78350F; color: #FCD34D; border: 1px solid #D97706; }
-.badge-in-use { background-color: #312E81; color: #A5B4FC; border: 1px solid #6366F1; }
-.badge-returned { background-color: #334155; color: #CBD5E1; border: 1px solid #475569; }
-.badge-damaged { background-color: #7F1D1D; color: #FCA5A5; border: 1px solid #DC2626; }
-.badge-expired { background-color: #1F2937; color: #9CA3AF; border: 1px solid #374151; }
+.badge-available { background-color: #DEF7EC; color: #03543F; border: 1px solid #BCF0DA; }
+.badge-pending { background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+.badge-in-use { background-color: #EEF2FF; color: #3730A3; border: 1px solid #C7D2FE; }
+.badge-returned { background-color: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
+.badge-damaged { background-color: #FDE8E8; color: #9B1C1C; border: 1px solid #F8B4B4; }
+.badge-expired { background-color: #F3F4F6; color: #6B7280; border: 1px solid #E5E7EB; }
 
+/* Timer Pill */
 .timer-pill {
     display: inline-flex;
     align-items: center;
@@ -141,71 +170,82 @@ label p,
     font-weight: 700;
     padding: 0.35rem 0.85rem;
     border-radius: 6px;
-    background: #78350F;
-    color: #FDE68A;
-    border: 1px solid #D97706;
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FDE68A;
 }
 
 .timer-pill.urgent {
-    background: #7F1D1D;
-    color: #FECACA;
-    border-color: #EF4444;
+    background: #FEE2E2;
+    color: #991B1B;
+    border-color: #FCA5A5;
 }
 
+/* Equipment Card */
 .eq-card {
-    background: #0F172A !important;
-    border: 1px solid #334155 !important;
+    background: #F8FAFC !important;
+    border: 1px solid #E2E8F0 !important;
     border-radius: 10px;
     padding: 1.25rem;
     margin-bottom: 1rem;
-    color: #F8FAFC !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.eq-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
 }
 
 .eq-title {
     font-weight: 700;
     font-size: 1.05rem;
-    color: #F8FAFC !important;
+    color: #0F172A !important;
 }
 
 .eq-meta {
     font-size: 0.85rem;
-    color: #94A3B8 !important;
+    color: #475569 !important;
     margin-bottom: 0.5rem;
 }
 
+/* Verification Checklist Box */
 .verification-box {
-    background: #0F172A;
-    border: 1px solid #334155;
-    border-left: 4px solid #6366F1;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-left: 4px solid #4F46E5;
     border-radius: 8px;
     padding: 1rem;
     margin: 1rem 0;
-    color: #F8FAFC;
+    color: #0F172A;
 }
 
+/* Peer directory cards */
 .peer-card {
-    background: #0F172A;
-    border: 1px solid #334155;
-    border-left: 4px solid #6366F1;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-left: 4px solid #4F46E5;
     border-radius: 10px;
     padding: 1.25rem;
     margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .peer-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 1rem;
-    background: #1E293B;
+    background: #F8FAFC;
     padding: 1rem;
     border-radius: 8px;
-    border: 1px solid #334155;
+    border: 1px solid #E2E8F0;
     margin-top: 0.75rem;
 }
 
 .peer-label {
     font-size: 0.75rem;
-    color: #94A3B8;
+    color: #64748B;
     font-weight: 700;
     text-transform: uppercase;
 }
@@ -213,5 +253,17 @@ label p,
 .peer-value {
     font-size: 0.98rem;
     font-weight: 600;
-    color: #F8FAFC;
+    color: #0F172A;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .app-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1.25rem;
+    }
+    .stat-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }

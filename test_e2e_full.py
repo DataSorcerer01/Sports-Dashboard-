@@ -7,9 +7,8 @@ from db import (
     cancel_request, expire_stale_requests, get_all_equipment,
     get_pending_requests, get_active_checkouts,
     get_student_active_requests, get_inventory_stats,
-    add_or_update_equipment
+    add_or_update_equipment, seed_database
 )
-from sample_data import seed_database
 from data_io import (
     generate_csv_template, generate_excel_template,
     validate_inventory_dataframe, commit_inventory_import

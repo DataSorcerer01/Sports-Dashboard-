@@ -1,5 +1,5 @@
 """
-db.py - SQLite database layer, state transitions, auto-expiration engine, and inventory tracking.
+db.py - SQLite database layer, state transitions, auto-expiration engine, and court tracking.
 """
 import sqlite3
 import os
@@ -63,7 +63,26 @@ def init_db():
     );
     """)
     
-    # Audit log / Return condition records
+    # Courts & Playing Facilities table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS courts (
+        court_id TEXT PRIMARY KEY,
+        court_name TEXT NOT NULL,
+        sport_type TEXT NOT NULL,
+        location_venue TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Available',
+        current_occupant TEXT,
+        dm_number TEXT,
+        contact_number TEXT,
+        hostel_room TEXT,
+        occupied_since TEXT,
+        intended_duration TEXT,
+        notes TEXT,
+        updated_at TEXT NOT NULL
+    );
+    """)
+    
+    # Audit log / Activity records
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS inventory_logs (
         log_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,11 +99,6 @@ def init_db():
 
 
 def expire_stale_requests() -> int:
-    """
-    Evaluates all 'Pending Verification' requests.
-    If current_time > expires_at (30 mins elapsed), automatically marks as 'Expired'
-    and unblocks the reserved inventory.
-    """
     conn = get_connection()
     cursor = conn.cursor()
     now_iso = datetime.now().isoformat()
@@ -102,14 +116,12 @@ def expire_stale_requests() -> int:
         req_id = row['request_id']
         eq_id = row['equipment_id']
         
-        # Mark request expired
         cursor.execute("""
             UPDATE allocation_requests
             SET status = 'Expired'
             WHERE request_id = ?
         """, (req_id,))
         
-        # Release inventory: decrement pending, increment available
         cursor.execute("""
             UPDATE equipment
             SET pending_quantity = MAX(0, pending_quantity - 1),
@@ -118,7 +130,6 @@ def expire_stale_requests() -> int:
             WHERE equipment_id = ?
         """, (now_iso, eq_id))
         
-        # Audit log
         cursor.execute("""
             INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
             VALUES (?, ?, 'AUTO_EXPIRE', ?, 'System Timer')
@@ -137,16 +148,11 @@ def create_allocation_request(
     room_number: str,
     intended_duration: str
 ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
-    """
-    Submits a student allocation request.
-    Strictly reserves 1 unit (Available -> Pending Verification) and sets a 30-min timer.
-    """
     expire_stale_requests()
     conn = get_connection()
     cursor = conn.cursor()
     
     try:
-        # Check equipment availability
         cursor.execute("SELECT * FROM equipment WHERE equipment_id = ?", (equipment_id,))
         eq = cursor.fetchone()
         if not eq:
@@ -157,13 +163,11 @@ def create_allocation_request(
             conn.close()
             return False, f"Equipment '{eq['item_name']}' has no available units at this moment.", None
             
-        # Generate Request ID (e.g., REQ-20260824-1234)
         now = datetime.now()
         req_id = f"REQ-{now.strftime('%Y%m%d')}-{now.strftime('%H%M%S%f')[:8]}"
         req_at = now.isoformat()
         expires_at = (now + timedelta(minutes=30)).isoformat()
         
-        # Reserve equipment unit
         cursor.execute("""
             UPDATE equipment
             SET available_quantity = available_quantity - 1,
@@ -176,7 +180,6 @@ def create_allocation_request(
             conn.close()
             return False, "Could not reserve item due to concurrent allocation. Please retry.", None
             
-        # Insert allocation request
         cursor.execute("""
             INSERT INTO allocation_requests (
                 request_id, equipment_id, equipment_name, category,
@@ -190,7 +193,6 @@ def create_allocation_request(
             intended_duration, req_at, expires_at
         ))
         
-        # Log action
         cursor.execute("""
             INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
             VALUES (?, ?, 'REQUEST_CREATED', ?, ?)
@@ -222,10 +224,6 @@ def create_allocation_request(
 
 
 def approve_allocation_request(request_id: str, guard_name: str = "Duty Guard") -> Tuple[bool, str]:
-    """
-    Security guard verifies student ID card and authorizes checkout.
-    Moves status: 'Pending Verification' -> 'In Use'.
-    """
     expire_stale_requests()
     conn = get_connection()
     cursor = conn.cursor()
@@ -247,7 +245,6 @@ def approve_allocation_request(request_id: str, guard_name: str = "Duty Guard") 
             
         now_iso = datetime.now().isoformat()
         
-        # Update request status to 'In Use'
         cursor.execute("""
             UPDATE allocation_requests
             SET status = 'In Use',
@@ -256,7 +253,6 @@ def approve_allocation_request(request_id: str, guard_name: str = "Duty Guard") 
             WHERE request_id = ? AND status = 'Pending Verification'
         """, (now_iso, guard_name, request_id))
         
-        # Update equipment counts: pending -> in_use
         cursor.execute("""
             UPDATE equipment
             SET pending_quantity = MAX(0, pending_quantity - 1),
@@ -265,7 +261,6 @@ def approve_allocation_request(request_id: str, guard_name: str = "Duty Guard") 
             WHERE equipment_id = ?
         """, (now_iso, req['equipment_id']))
         
-        # Audit log
         cursor.execute("""
             INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
             VALUES (?, ?, 'GUARD_APPROVED', ?, ?)
@@ -287,11 +282,6 @@ def return_equipment(
     guard_notes: str = "",
     guard_name: str = "Duty Guard"
 ) -> Tuple[bool, str]:
-    """
-    Security guard marks equipment as returned and logs physical condition.
-    Moves status: 'In Use' -> 'Returned'.
-    Updates equipment counts: decrements in_use, increments available (or damaged).
-    """
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -309,7 +299,6 @@ def return_equipment(
         now_iso = datetime.now().isoformat()
         is_damaged = return_condition in ["Damaged / Broken", "Missing Parts"]
         
-        # Update request record
         cursor.execute("""
             UPDATE allocation_requests
             SET status = 'Returned',
@@ -319,7 +308,6 @@ def return_equipment(
             WHERE request_id = ?
         """, (now_iso, return_condition, guard_notes.strip(), request_id))
         
-        # Update equipment inventory
         if is_damaged:
             cursor.execute("""
                 UPDATE equipment
@@ -338,7 +326,6 @@ def return_equipment(
                 WHERE equipment_id = ?
             """, (now_iso, req['equipment_id']))
             
-        # Log return
         cursor.execute("""
             INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
             VALUES (?, ?, 'RETURNED', ?, ?)
@@ -355,9 +342,6 @@ def return_equipment(
 
 
 def cancel_request(request_id: str, reason: str = "Cancelled by User") -> Tuple[bool, str]:
-    """
-    Cancels a pending request and unblocks the item.
-    """
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -396,6 +380,147 @@ def cancel_request(request_id: str, reason: str = "Cancelled by User") -> Tuple[
         conn.close()
         return False, str(e)
 
+
+# -------------------------------------------------------------
+# COURT OCCUPANCY & FACILITY TRACKING
+# -------------------------------------------------------------
+
+def get_all_courts() -> List[Dict[str, Any]]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM courts ORDER BY sport_type ASC, court_name ASC")
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def occupy_court(
+    court_id: str,
+    student_name: str,
+    dm_number: str,
+    contact_number: str,
+    hostel_room: str,
+    intended_duration: str,
+    notes: str = ""
+) -> Tuple[bool, str]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_iso = datetime.now().isoformat()
+    
+    try:
+        cursor.execute("SELECT * FROM courts WHERE court_id = ?", (court_id,))
+        court = cursor.fetchone()
+        if not court:
+            conn.close()
+            return False, f"Court ID '{court_id}' not found."
+            
+        if court['status'] == 'Occupied':
+            conn.close()
+            return False, f"'{court['court_name']}' is already occupied by {court['current_occupant']} ({court['dm_number']})."
+            
+        cursor.execute("""
+            UPDATE courts
+            SET status = 'Occupied',
+                current_occupant = ?,
+                dm_number = ?,
+                contact_number = ?,
+                hostel_room = ?,
+                occupied_since = ?,
+                intended_duration = ?,
+                notes = ?,
+                updated_at = ?
+            WHERE court_id = ?
+        """, (
+            student_name.strip(), dm_number.strip().upper(),
+            contact_number.strip(), hostel_room.strip().upper(),
+            now_iso, intended_duration, notes.strip(), now_iso, court_id
+        ))
+        
+        cursor.execute("""
+            INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
+            VALUES (?, ?, 'COURT_OCCUPIED', ?, ?)
+        """, (now_iso, court_id, f"Court '{court['court_name']}' checked in by {student_name} ({dm_number}). Duration: {intended_duration}", student_name))
+        
+        conn.commit()
+        conn.close()
+        return True, f"'{court['court_name']}' successfully checked in to {student_name} ({dm_number.upper()})!"
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return False, f"Error booking court: {str(e)}"
+
+
+def release_court(court_id: str, released_by: str = "Duty Guard") -> Tuple[bool, str]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_iso = datetime.now().isoformat()
+    
+    try:
+        cursor.execute("SELECT * FROM courts WHERE court_id = ?", (court_id,))
+        court = cursor.fetchone()
+        if not court:
+            conn.close()
+            return False, f"Court ID '{court_id}' not found."
+            
+        if court['status'] != 'Occupied':
+            conn.close()
+            return False, f"'{court['court_name']}' is not currently marked as occupied."
+            
+        prev_occupant = court['current_occupant']
+        prev_dm = court['dm_number']
+        
+        cursor.execute("""
+            UPDATE courts
+            SET status = 'Available',
+                current_occupant = NULL,
+                dm_number = NULL,
+                contact_number = NULL,
+                hostel_room = NULL,
+                occupied_since = NULL,
+                intended_duration = NULL,
+                notes = NULL,
+                updated_at = ?
+            WHERE court_id = ?
+        """, (now_iso, court_id))
+        
+        cursor.execute("""
+            INSERT INTO inventory_logs (timestamp, equipment_id, action_type, details, actor)
+            VALUES (?, ?, 'COURT_RELEASED', ?, ?)
+        """, (now_iso, court_id, f"Court '{court['court_name']}' released by {released_by}. Previous occupant: {prev_occupant} ({prev_dm})", released_by))
+        
+        conn.commit()
+        conn.close()
+        return True, f"'{court['court_name']}' is now marked Available and ready for the next players!"
+    except Exception as e:
+        conn.rollback()
+        conn.close()
+        return False, f"Error releasing court: {str(e)}"
+
+
+def get_court_stats() -> Dict[str, int]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'Available' THEN 1 ELSE 0 END) as available,
+            SUM(CASE WHEN status = 'Occupied' THEN 1 ELSE 0 END) as occupied,
+            SUM(CASE WHEN status = 'Under Maintenance' THEN 1 ELSE 0 END) as maintenance
+        FROM courts
+    """)
+    row = cursor.fetchone()
+    conn.close()
+    return {
+        "total": row['total'] or 0,
+        "available": row['available'] or 0,
+        "occupied": row['occupied'] or 0,
+        "maintenance": row['maintenance'] or 0
+    }
+
+
+# -------------------------------------------------------------
+# GETTERS & QUERIES
+# -------------------------------------------------------------
 
 def get_all_equipment() -> List[Dict[str, Any]]:
     expire_stale_requests()
@@ -496,7 +621,6 @@ def add_or_update_equipment(item_dict: Dict[str, Any]) -> Tuple[bool, str]:
         existing = cursor.fetchone()
         
         if existing:
-            # Update existing
             cursor.execute("""
                 UPDATE equipment
                 SET category = ?,
@@ -521,7 +645,6 @@ def add_or_update_equipment(item_dict: Dict[str, Any]) -> Tuple[bool, str]:
             ))
             action = "updated"
         else:
-            # Insert new
             cursor.execute("""
                 INSERT INTO equipment (
                     equipment_id, category, item_name, total_quantity,
@@ -550,3 +673,58 @@ def add_or_update_equipment(item_dict: Dict[str, Any]) -> Tuple[bool, str]:
         conn.rollback()
         conn.close()
         return False, f"Failed to save equipment: {str(e)}"
+
+
+def seed_database(force_reseed: bool = False):
+    from sample_data import SEED_EQUIPMENT, SEED_COURTS
+    init_db()
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) as cnt FROM equipment")
+    eq_count = cursor.fetchone()['cnt']
+    
+    cursor.execute("SELECT COUNT(*) as cnt FROM courts")
+    court_count = cursor.fetchone()['cnt']
+    
+    if eq_count == 0 or force_reseed:
+        cursor.execute("DELETE FROM allocation_requests")
+        cursor.execute("DELETE FROM inventory_logs")
+        cursor.execute("DELETE FROM equipment")
+        
+        now_iso = datetime.now().isoformat()
+        for item in SEED_EQUIPMENT:
+            cursor.execute("""
+                INSERT INTO equipment (
+                    equipment_id, category, item_name, total_quantity,
+                    available_quantity, in_use_quantity, pending_quantity,
+                    damaged_quantity, location_rack, condition, notes,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?, ?, ?)
+            """, (
+                item['equipment_id'], item['category'], item['item_name'],
+                item['total_quantity'], item['available_quantity'],
+                item['location_rack'], item['condition'], item.get('notes', ''),
+                now_iso, now_iso
+            ))
+        conn.commit()
+        print(f"Seeded {len(SEED_EQUIPMENT)} equipment items successfully.")
+        
+    if court_count == 0 or force_reseed:
+        cursor.execute("DELETE FROM courts")
+        now_iso = datetime.now().isoformat()
+        for c in SEED_COURTS:
+            cursor.execute("""
+                INSERT INTO courts (
+                    court_id, court_name, sport_type, location_venue,
+                    status, notes, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                c['court_id'], c['court_name'], c['sport_type'],
+                c['location_venue'], c['status'], c.get('notes', ''),
+                now_iso
+            ))
+        conn.commit()
+        print(f"Seeded {len(SEED_COURTS)} campus courts successfully.")
+        
+    conn.close()
