@@ -111,17 +111,16 @@ if st.session_state.user_role is None:
             </div>
             """, unsafe_allow_html=True)
             
-            with st.expander("Security Desk Login (Staff Only)", expanded=False):
-                with st.form(key="guard_login_form"):
-                    pass_code = st.text_input("Security Desk Passcode", type="password", placeholder="Enter staff passcode")
-                    st.caption("Hint: Default staff passcode is `guard123`")
-                    submit_guard = st.form_submit_button("Log In to Security Dashboard", type="primary", use_container_width=True)
-                    if submit_guard:
-                        if pass_code.strip() in ["guard123", "sportsdesk", "admin", "1234"]:
-                            st.session_state.user_role = "Security Guard"
-                            st.rerun()
-                        else:
-                            st.error("Invalid passcode. Please use `guard123` to enter.")
+            with st.form(key="guard_login_form"):
+                pass_code = st.text_input("Security Desk Passcode", type="password", placeholder="Enter staff passcode (e.g., guard123)")
+                st.caption("Default staff passcode is `guard123`")
+                submit_guard = st.form_submit_button("Log In to Security Desk", type="primary", use_container_width=True)
+                if submit_guard:
+                    if pass_code.strip() in ["guard123", "sportsdesk", "admin", "1234"]:
+                        st.session_state.user_role = "Security Guard"
+                        st.rerun()
+                    else:
+                        st.error("Invalid passcode. Please use guard123 to enter.")
 
 elif st.session_state.user_role == "Student":
     # ---------------------------------------------------------

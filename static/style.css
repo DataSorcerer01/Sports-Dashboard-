@@ -1,14 +1,32 @@
-/* Campus Sports Management System - High Contrast Arial Theme */
+/* Campus Sports Management System - High Contrast Arial Theme (With Protected Icon Fonts) */
 
-html, body, [class*="css"], .stApp, 
-h1, h2, h3, h4, h5, h6, 
-p, span, div, a, label, input, button, select, textarea,
+/* Global text typography using Arial, excluding icons */
+html, body, .stApp {
+    font-family: Arial, Helvetica, sans-serif !important;
+    background-color: #F0F7FF !important;
+    color: #0F172A !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+p, label, input, textarea,
+.stTextInput input, .stTextArea textarea, .stNumberInput input,
 [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p {
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
-.stApp {
-    background-color: #F0F7FF !important;
+/* =============================================================
+   CRITICAL FIX: PRESERVE STREAMLIT MATERIAL ICONS & ARROWS
+   (DO NOT OVERRIDE WITH ARIAL)
+   ============================================================= */
+[data-testid="stIcon"],
+[data-testid="stSidebarCollapseButton"] *,
+button[data-testid="stSidebarCollapseButton"] span,
+.material-icons,
+[class*="material-symbols"],
+[class*="material-icons"],
+div[data-testid="stExpander"] summary *,
+summary span:first-child {
+    font-family: 'Material Symbols Rounded', 'Material Icons', 'Segoe UI Symbol', sans-serif !important;
 }
 
 .main .block-container {
@@ -18,7 +36,7 @@ p, span, div, a, label, input, button, select, textarea,
 }
 
 /* =============================================================
-   TOP APP HEADER BANNER (PURE WHITE TEXT, ZERO OVERRIDE)
+   TOP APP HEADER BANNER
    ============================================================= */
 .app-header {
     background: linear-gradient(135deg, #0F2942 0%, #1E3A8A 55%, #1D4ED8 100%) !important;
@@ -35,7 +53,6 @@ p, span, div, a, label, input, button, select, textarea,
 }
 
 .app-header h1,
-.app-header h1 span,
 .app-header .app-title {
     color: #FFFFFF !important;
     font-size: 1.7rem !important;
@@ -70,16 +87,17 @@ p, span, div, a, label, input, button, select, textarea,
 }
 
 /* =============================================================
-   SIDEBAR
+   SIDEBAR STYLING
    ============================================================= */
 section[data-testid="stSidebar"] {
     background-color: #FFFFFF !important;
     border-right: 1px solid #BFDBFE !important;
 }
 
-section[data-testid="stSidebar"] * {
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] div:not([data-testid="stIcon"]) {
     color: #0F2942 !important;
-    font-family: Arial, Helvetica, sans-serif !important;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
 section[data-testid="stSidebar"] .stButton > button {
@@ -144,7 +162,6 @@ div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
     margin-bottom: 1rem !important;
 }
 
-/* Content Headings outside banner */
 .main h1:not(.app-header h1), 
 .main h2, 
 .main h3, 
@@ -153,11 +170,6 @@ div[data-testid="stVerticalBlock"] > div[data-testid="stContainer"] {
 .main h6 {
     color: #0F2942 !important;
     font-weight: 700 !important;
-    font-family: Arial, Helvetica, sans-serif !important;
-}
-
-p, span, div {
-    color: #1E293B;
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
@@ -198,7 +210,6 @@ div[data-baseweb="select"] * {
     font-family: Arial, Helvetica, sans-serif !important;
 }
 
-/* Dropdown Menu Popover Options */
 div[data-baseweb="popover"],
 div[data-baseweb="menu"],
 ul[role="listbox"],
